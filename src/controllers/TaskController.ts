@@ -1,10 +1,7 @@
 import { Request, Response } from "express";
 import Task from "../models/TaskModel";
-import Project from "../models/ProjectModel";
-import { io } from "../server";
-import { NotificationController } from "./NotificationController";
-import User from "../models/UserModel";
-import { notificationTypes } from "../models/NotificationModel";
+import { notifyTaskStatusUpdated } from "../services/notificationService";
+import { Types } from "mongoose";
 
 export class TaskController {
   static createTask = async (req: Request, res: Response) => {
@@ -13,7 +10,20 @@ export class TaskController {
       task.project = req.project._id;
       req.project.tasks.push(task._id);
       await Promise.allSettled([task.save(), req.project.save()]);
-      res.send("Tarea creada correctamente");
+
+      const members = [...req.project.team, req.project.manager].filter(
+        Boolean,
+      ); // elimina undefined y null
+
+      await notifyTaskStatusUpdated({
+        members: members as Array<{ _id: Types.ObjectId }>,
+        triggeredBy: req.user!._id!,
+        projectId: req.project._id,
+        taskId: task._id,
+        content: `${req.user!.name} creó la tarea "${task.name}"`,
+      });
+
+      res.json({ message: "Tarea creada correctamente", project: req.project });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -47,6 +57,19 @@ export class TaskController {
       req.task.name = req.body.name;
       req.task.description = req.body.description;
       await req.task.save();
+
+      const members = [...req.project.team, req.project.manager].filter(
+        Boolean,
+      ); // elimina undefined y null
+
+      await notifyTaskStatusUpdated({
+        members: members as Array<{ _id: Types.ObjectId }>,
+        triggeredBy: req.user!._id!,
+        projectId: req.project._id,
+        taskId: req.task._id,
+        content: `${req.user!.name} actualizó el estado de la tarea "${req.task.name}" a "${status}"`,
+      });
+      
       res.send("Tarea Actualizada Correctamente");
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
@@ -59,7 +82,23 @@ export class TaskController {
         (task) => task?._id.toString() !== req.task._id.toString(),
       );
       await Promise.allSettled([req.task.deleteOne(), req.project.save()]);
-      res.send("Tarea Eliminada Correctamente");
+
+      const members = [...req.project.team, req.project.manager].filter(
+        Boolean,
+      ); // elimina undefined y null
+
+      await notifyTaskStatusUpdated({
+        members: members as Array<{ _id: Types.ObjectId }>,
+        triggeredBy: req.user!._id!,
+        projectId: req.project._id,
+        taskId: req.task._id,
+        content: `${req.user!.name} eliminó la tarea "${req.task.name}"`,
+      });
+
+      res.send({
+        message: "Tarea Eliminada Correctamente",
+        project: req.project,
+      });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -80,34 +119,19 @@ export class TaskController {
         Boolean,
       ); // elimina undefined y null
 
-      const notificaciones = await Promise.all(
-        members
-          .filter(
-            (memberID) => memberID?._id.toString() !== req.user?._id.toString(),
-          ) // excluye al triggeredBy
-          .map((memberID) =>
-            NotificationController.createNotification({
-              user: memberID!._id,
-              triggeredBy: req.user!._id!,
-              project: req.project._id,
-              task: req.task._id,
-              type: notificationTypes.TASK_STATUS_UPDATED,
-              content: `${req.user!.name} actualizó el estado de la tarea "${req.task.name}"`,
-            }),
-          ),
-      );
-
-      // emite la notificación a cada usuario
-      notificaciones.forEach((notification) => {
-        if (notification) {
-          io.to(notification?.user!.toString()).emit(
-            "new_notification",
-            notification,
-          );
-        }
+      await notifyTaskStatusUpdated({
+        members: members as Array<{ _id: Types.ObjectId }>,
+        triggeredBy: req.user!._id!,
+        projectId: req.project._id,
+        taskId: req.task._id,
+        content: `${req.user!.name} actualizó el estado de la tarea "${req.task.name}" a "${status}"`,
       });
 
-      res.send({message: "Tarea Actualizada", project: req.project, task: req.task});
+      res.send({
+        message: "Tarea Actualizada",
+        project: req.project,
+        task: req.task,
+      });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }

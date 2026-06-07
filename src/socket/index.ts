@@ -37,5 +37,16 @@ export const setupSocket = (io: Server) => {
     socket.on('member_removed', (data) => {
       socket.to(data.userID).emit("member_removed_notification", data)
     })
+
+    socket.on("taskCreated", (data) => {
+      data.project.team.forEach((memberID: string) => {
+        socket.to(memberID).emit("taskCreatedMessage", data);
+      });
+    });
+
+    socket.on("taskDeleted", (data) => {
+      data.project.team.forEach((memberID: string) => {
+        socket.to(memberID).emit("taskDeletedMessage", data);
+      });
   });
-};
+})};
