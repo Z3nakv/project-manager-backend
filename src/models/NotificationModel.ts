@@ -26,8 +26,10 @@ export const notificationTypes = {
   NOTE_ADDED: "note_added",
 } as const;
 
-export type NotificationType =
-  (typeof notificationTypes)[keyof typeof notificationTypes];
+/* export type NotificationType =
+  (typeof notificationTypes)[keyof typeof notificationTypes]; */
+
+export type NotificationType = typeof notificationTypes[keyof typeof notificationTypes];
 
 const NotificationSchema = new Schema(
   {

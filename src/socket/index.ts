@@ -15,7 +15,7 @@ export const setupSocket = (io: Server) => {
     socket.on("send_message", (data) => {
       data.team.forEach((memberID: string) => {
         if(memberID !== data.triggeredBy) { // excluye al emisor
-            socket.to(memberID).emit("receive_message", data)
+            socket.to(memberID).emit("task_status_updated_notification", data)
         }
       }); // solo a la sala del proyecto
     });
@@ -55,4 +55,10 @@ export const setupSocket = (io: Server) => {
         socket.to(memberID).emit("taskUpdatedMessage", data);
       });
     })
+
+    socket.on("project_updated", (data) => {
+      data.team.forEach((memberID : string) => {
+        socket.to(memberID).emit("project_updated_notification", data.message)
+      })
+    }) 
 })};

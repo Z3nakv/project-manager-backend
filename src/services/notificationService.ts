@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 import { NotificationController } from "../controllers/NotificationController";
-import { notificationTypes } from "../models/NotificationModel";
+import { NotificationType, notificationTypes } from "../models/NotificationModel";
 import { io } from "../server";
 
 type NotifyTaskStatusParams = {
@@ -8,10 +8,11 @@ type NotifyTaskStatusParams = {
   triggeredBy: Types.ObjectId;
   projectId: Types.ObjectId;
   taskId: Types.ObjectId | null;
-    content?: string;
+  content?: string; 
+  actionType?: string;
 };
 
-export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, taskId, content }: NotifyTaskStatusParams) => {
+export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, taskId, actionType, content }: NotifyTaskStatusParams) => {
   
   const notificaciones = await Promise.all(
         members
@@ -24,7 +25,7 @@ export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, tas
               triggeredBy: triggeredBy,
               project: projectId,
               task: taskId ?? undefined,
-              type: notificationTypes.TASK_STATUS_UPDATED || null,
+              type: notificationTypes[actionType! as keyof typeof notificationTypes] as NotificationType,
               content: `${content}`,
             }),
           ),

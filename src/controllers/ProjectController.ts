@@ -81,6 +81,7 @@ export class ProjectController {
         triggeredBy: req.user!._id!,
         projectId: req.project._id,
         taskId: null, // No hay una tarea específica asociada a esta notificación
+        actionType: "PROJECT_UPDATED",
         content: `${req.user!.name} actualizó el proyecto "${req.project.projectName}"`,
       });
       
@@ -103,7 +104,8 @@ export class ProjectController {
         triggeredBy: req.user!._id!,
         projectId: req.project._id,
         taskId: null, // No hay una tarea específica asociada a esta notificación
-        content: `${req.user!.name} actualizó el proyecto "${req.project.projectName}"`,
+        actionType: "PROJECT_DELETED",
+        content: `${req.user!.name} eliminó el proyecto "${req.project.projectName}"`,
       });
 
       res.send("Proyecto Eliminado");
