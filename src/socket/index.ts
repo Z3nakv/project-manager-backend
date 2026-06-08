@@ -49,4 +49,10 @@ export const setupSocket = (io: Server) => {
         socket.to(memberID).emit("taskDeletedMessage", data);
       });
   });
+
+    socket.on("taskUpdated", (data) => {
+      data.project.team.forEach((memberID: string) => {
+        socket.to(memberID).emit("taskUpdatedMessage", data);
+      });
+    })
 })};

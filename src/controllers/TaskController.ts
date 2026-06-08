@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Task from "../models/TaskModel";
-import { notifyTaskStatusUpdated } from "../services/notificationService";
+import { notifyChangesToTeam } from "../services/notificationService";
 import { Types } from "mongoose";
 
 export class TaskController {
@@ -15,7 +15,7 @@ export class TaskController {
         Boolean,
       ); // elimina undefined y null
 
-      await notifyTaskStatusUpdated({
+      await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
         projectId: req.project._id,
@@ -53,24 +53,30 @@ export class TaskController {
   };
 
   static updateProjectTask = async (req: Request, res: Response) => {
+    
     try {
       req.task.name = req.body.name;
       req.task.description = req.body.description;
+      req.task.deadline = req.body.deadline;
       await req.task.save();
 
       const members = [...req.project.team, req.project.manager].filter(
         Boolean,
       ); // elimina undefined y null
 
-      await notifyTaskStatusUpdated({
+        await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
         projectId: req.project._id,
         taskId: req.task._id,
-        content: `${req.user!.name} actualizó el estado de la tarea "${req.task.name}" a "${status}"`,
+        content: `${req.user!.name} actualizó la tarea "${req.task.name}"`,
       });
       
-      res.send("Tarea Actualizada Correctamente");
+      res.send({ 
+        message: "Tarea Actualizada Correctamente", 
+        project: req.project,
+        task: req.task, 
+      });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -87,7 +93,7 @@ export class TaskController {
         Boolean,
       ); // elimina undefined y null
 
-      await notifyTaskStatusUpdated({
+      await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
         projectId: req.project._id,
@@ -119,7 +125,7 @@ export class TaskController {
         Boolean,
       ); // elimina undefined y null
 
-      await notifyTaskStatusUpdated({
+      await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
         projectId: req.project._id,

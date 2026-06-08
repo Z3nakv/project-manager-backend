@@ -20,6 +20,7 @@ export interface ITask extends Document {
         status: TaskStatus
     }[]
     notes: Types.ObjectId[]
+    deadline: Date | null
 }
 
 export const TaskSchema : Schema = new Schema({

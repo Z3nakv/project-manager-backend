@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import Project from "../models/ProjectModel";
+import { Types } from "mongoose";
+import { notifyChangesToTeam } from "../services/notificationService";
 
 export class ProjectController {
   static createProject = async (req: Request, res: Response) => {
@@ -16,8 +18,10 @@ export class ProjectController {
   static getProjects = async (req: Request, res: Response) => {
     try {
       const projects = await Project.find({
-        $or: [{ manager: req.user?._id }, { team: { $in: [req.user?._id] } }],
-      }).populate("manager", "_id");
+        $or: [{ manager: req.user?._id }, { team: { $in: [req.user?._id] } }]})
+        .populate("manager", "_id")
+        .populate("team", "_id")
+        .populate("tasks", "_id");
       res.status(200).json(projects);
     } catch (error) {
       console.log(error);
@@ -42,6 +46,7 @@ export class ProjectController {
               path: "completedBy",
               populate: {
                 path: "user",
+                select: "_id email name",
               },
             },
           ],
@@ -66,7 +71,19 @@ export class ProjectController {
       req.project.projectName = req.body.projectName;
       req.project.description = req.body.description;
 
+      const members = [...req.project.team, req.project.manager].filter(
+        Boolean,
+      ); // elimina undefined y null
       await req.project.save();
+
+      await notifyChangesToTeam({
+        members: members as Array<{ _id: Types.ObjectId }>,
+        triggeredBy: req.user!._id!,
+        projectId: req.project._id,
+        taskId: null, // No hay una tarea específica asociada a esta notificación
+        content: `${req.user!.name} actualizó el proyecto "${req.project.projectName}"`,
+      });
+      
       res.send("Proyecto Actualizado");
     } catch (error) {
       console.log(error);
@@ -76,6 +93,19 @@ export class ProjectController {
   static deleteProject = async (req: Request, res: Response) => {
     try {
       await req.project.deleteOne();
+
+      const members = [...req.project.team, req.project.manager].filter(
+        Boolean,
+      ); // elimina undefined y null
+
+      await notifyChangesToTeam({
+        members: members as Array<{ _id: Types.ObjectId }>,
+        triggeredBy: req.user!._id!,
+        projectId: req.project._id,
+        taskId: null, // No hay una tarea específica asociada a esta notificación
+        content: `${req.user!.name} actualizó el proyecto "${req.project.projectName}"`,
+      });
+
       res.send("Proyecto Eliminado");
     } catch (error) {
       console.log(error);

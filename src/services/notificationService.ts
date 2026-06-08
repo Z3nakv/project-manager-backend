@@ -7,12 +7,13 @@ type NotifyTaskStatusParams = {
   members: Array<{ _id: Types.ObjectId }>;
   triggeredBy: Types.ObjectId;
   projectId: Types.ObjectId;
-  taskId: Types.ObjectId;
+  taskId: Types.ObjectId | null;
     content?: string;
 };
 
-export const notifyTaskStatusUpdated = async ({ members, triggeredBy, projectId, taskId, content }: NotifyTaskStatusParams) => {
-    const notificaciones = await Promise.all(
+export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, taskId, content }: NotifyTaskStatusParams) => {
+  
+  const notificaciones = await Promise.all(
         members
           .filter(
             (memberID) => memberID?._id.toString() !== triggeredBy.toString(),
@@ -22,7 +23,7 @@ export const notifyTaskStatusUpdated = async ({ members, triggeredBy, projectId,
               user: memberID!._id,
               triggeredBy: triggeredBy,
               project: projectId,
-              task: taskId,
+              task: taskId ?? undefined,
               type: notificationTypes.TASK_STATUS_UPDATED || null,
               content: `${content}`,
             }),
