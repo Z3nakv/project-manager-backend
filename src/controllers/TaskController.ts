@@ -18,8 +18,8 @@ export class TaskController {
       await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
-        projectId: req.project._id,
-        taskId: task._id,
+        projectId: req.project._id!,
+        taskId: task._id!,
         actionType: "TASK_CREATED",
         content: `${req.user!.name} creó la tarea "${task.name}"`,
       });
@@ -68,8 +68,8 @@ export class TaskController {
         await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
-        projectId: req.project._id,
-        taskId: req.task._id,
+        projectId: req.project._id!,
+        taskId: req.task._id!,
         actionType: "TASK_UPDATED",
         content: `${req.user!.name} actualizó la tarea "${req.task.name}"`,
       });
@@ -98,8 +98,8 @@ export class TaskController {
       await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
-        projectId: req.project._id,
-        taskId: req.task._id,
+        projectId: req.project._id!,
+        taskId: req.task._id!,
         actionType: "TASK_DELETED",
         content: `${req.user!.name} eliminó la tarea "${req.task.name}"`,
       });
@@ -131,8 +131,8 @@ export class TaskController {
       await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
-        projectId: req.project._id,
-        taskId: req.task._id,
+        projectId: req.project._id!,
+        taskId: req.task._id!,
         actionType: "TASK_STATUS_UPDATED",
         content: `${req.user!.name} actualizó el estado de la tarea "${req.task.name}" a "${status}"`,
       });
