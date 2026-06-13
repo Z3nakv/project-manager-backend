@@ -8,11 +8,13 @@ import { hasProjectAccess, projectExists } from "../middleware/project";
 import { hasAuthorization, taskExists } from "../middleware/task";
 import { authenticate } from "../middleware/auth";
 import { TeamMemberController } from "../controllers/TeamController";
+import { idemPotencyMiddleware } from "../middleware/itemPotency";
 
 
 const router = Router();
 
 router.use(authenticate);
+router.use(idemPotencyMiddleware);
 
 router.get('/', ProjectController.getProjects);
 

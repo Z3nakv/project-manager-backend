@@ -3,8 +3,11 @@ import { body, param } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
 import { AuthController } from "../controllers/AuthController";
 import { authenticate } from "../middleware/auth";
+import { idemPotencyMiddleware } from "../middleware/itemPotency";
 
 const router = Router();
+
+router.use(idemPotencyMiddleware);
 
 router.post('/create-account', 
     body('name')

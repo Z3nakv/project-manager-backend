@@ -13,7 +13,7 @@ type NotifyTaskStatusParams = {
 };
 
 export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, taskId, actionType, content }: NotifyTaskStatusParams) => {
-  console.log({members, triggeredBy, projectId, taskId, actionType, content});
+  
   const notificaciones = await Promise.all(
         members
           .filter(

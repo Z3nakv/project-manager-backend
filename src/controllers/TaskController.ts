@@ -44,8 +44,7 @@ export class TaskController {
   static getProjectTask = async (req: Request, res: Response) => {
     try {
       const task = await Task.findById(req.task._id)
-        .populate({ path: "notes" })
-        .populate({ path: "completedBy.user" });
+        .populate({ path: "notes", populate: {path: 'createdBy', select: "_id email name"} })
 
       res.status(200).json(task);
     } catch (error) {

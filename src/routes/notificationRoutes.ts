@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth";
 import { NotificationController } from "../controllers/NotificationController";
-import { projectExists } from "../middleware/project";
-import { taskExists } from "../middleware/task";
+import { idemPotencyMiddleware } from "../middleware/itemPotency";
 
 const router = Router();
+
+router.use(idemPotencyMiddleware);
 
 // routes/notificationRoutes.ts
 router.get('/', authenticate, NotificationController.getNotifications)      // GET /api/notifications
