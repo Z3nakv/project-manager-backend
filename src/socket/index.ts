@@ -2,15 +2,16 @@ import { Server } from "socket.io";
 
 export const setupSocket = (io: Server) => {
   io.on("connection", (socket) => {
+
     socket.on("join_user", (userID) => {
       socket.join(userID);
       console.log(`socket ${socket.id} se unió a sala ${userID}`)
     });
 
-    socket.on("join_project", (projectID) => {
+    /* socket.on("join_project", (projectID) => {
       console.log(`socket ${socket.id} se unió a la sala ${projectID}`);
       console.log("salas actuales:", socket.rooms);
-    });
+    }); */
 
     socket.on("send_message", (data) => {
       data.team.forEach((memberID: string) => {
@@ -20,9 +21,9 @@ export const setupSocket = (io: Server) => {
       }); // solo a la sala del proyecto
     });
 
-    socket.on("leave_project", (projectID) => {
+    /* socket.on("leave_project", (projectID) => {
       socket.leave(projectID);
-    });
+    }); */
 
     socket.on("project_deleted", (data) => {
       data.team.forEach((memberID: string) => {
