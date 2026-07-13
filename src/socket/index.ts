@@ -8,29 +8,20 @@ export const setupSocket = (io: Server) => {
       console.log(`socket ${socket.id} se unió a sala ${userID}`)
     });
 
-    /* socket.on("join_project", (projectID) => {
-      console.log(`socket ${socket.id} se unió a la sala ${projectID}`);
-      console.log("salas actuales:", socket.rooms);
-    }); */
-
-    socket.on("send_message", (data) => {
-      data.team.forEach((memberID: string) => {
-        if(memberID !== data.triggeredBy) { // excluye al emisor
-            socket.to(memberID).emit("task_status_updated_notification", data)
-        }
-      }); // solo a la sala del proyecto
-    });
-
-    /* socket.on("leave_project", (projectID) => {
-      socket.leave(projectID); .[=]
-    }); */
+    //socket project events
+    socket.on("project_updated", (data) => {
+      data.team.forEach((memberID : string) => {
+        socket.to(memberID).emit("project_updated_notification", data.message)
+      })
+    })
 
     socket.on("project_deleted", (data) => {
       data.team.forEach((memberID: string) => {
-        socket.to(memberID).emit("receive_project_deleted", data);
+        socket.to(memberID).emit("project_deleted_notification", data);
       });
     });
 
+    //socket members event
     socket.on('member_added', (data) => {
       socket.to(data.userID).emit("member_added_notification", data)
     });
@@ -39,27 +30,30 @@ export const setupSocket = (io: Server) => {
       socket.to(data.userID).emit("member_removed_notification", data)
     })
 
-    socket.on("taskCreated", (data) => {
+    //socket task events
+    socket.on("task_created", (data) => {
       data.project.team.forEach((memberID: string) => {
-        socket.to(memberID).emit("taskCreatedMessage", data);
+        socket.to(memberID).emit("task_created_notification", {projectID: data.project._id});
       });
     });
 
     socket.on("taskDeleted", (data) => {
       data.project.team.forEach((memberID: string) => {
-        socket.to(memberID).emit("taskDeletedMessage", data);
+        socket.to(memberID).emit("task_deleted_notification", {projectID: data.project._id});
       });
   });
 
     socket.on("taskUpdated", (data) => {
       data.project.team.forEach((memberID: string) => {
-        socket.to(memberID).emit("taskUpdatedMessage", data);
+        socket.to(memberID).emit("task_updated_notification", {projectID: data.project._id});
       });
-    })
-
-    socket.on("project_updated", (data) => {
-      data.team.forEach((memberID : string) => {
-        socket.to(memberID).emit("project_updated_notification", data.message)
-      })
     }) 
+
+    socket.on("task_status_update", (data) => {
+      data.team.forEach((memberID: string) => {
+        if(memberID !== data.triggeredBy) { // excluye al emisor
+            socket.to(memberID).emit("task_status_updated_notification", {projectID: data.project._id})
+        }
+      }); // solo a la sala del proyecto
+    });
 })};

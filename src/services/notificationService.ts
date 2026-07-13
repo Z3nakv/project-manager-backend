@@ -35,7 +35,7 @@ export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, tas
       notificaciones.forEach((notification) => {
         if (notification) {
           io.to(notification?.user!.toString()).emit(
-            "new_notification",
+            "static_notification",
             notification,
           );
         }
