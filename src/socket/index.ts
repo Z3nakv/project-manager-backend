@@ -22,7 +22,7 @@ export const setupSocket = (io: Server) => {
     });
 
     /* socket.on("leave_project", (projectID) => {
-      socket.leave(projectID);
+      socket.leave(projectID); .[=]
     }); */
 
     socket.on("project_deleted", (data) => {

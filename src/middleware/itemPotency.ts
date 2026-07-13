@@ -6,7 +6,7 @@ export const idemPotencyMiddleware = (req : Request, res : Response, next : Next
     const key = req.headers['idempotency-key'] as string;
      
     if(!key) return next();
-   console.log({key})
+   /* console.log({key}) */
     const now = Date.now();
 
     processedKeys.forEach((timestamp, k) => {
