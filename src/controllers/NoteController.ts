@@ -42,7 +42,7 @@ export class NoteController {
       members
       .filter((member) => member?._id.toString() !== req.user?._id.toString())
       .forEach((member) => {
-        io.to(member?._id.toString()!).emit("note_added", {message: content})
+        io.to(member?._id.toString()!).emit("note_added", {message: content, projectID: req.project._id})
       })
 
       res.send("Nota Creada Correctamente");
@@ -102,7 +102,7 @@ export class NoteController {
       members
       .filter((member) => member?._id.toString() !== req.user?._id.toString())
       .forEach((member) => {
-        io.to(member?._id.toString()!).emit("note_deleted", {message: content})
+        io.to(member?._id.toString()!).emit("note_deleted", {message: content, projectID: req.project._id})
       })
       
       res.send("Nota Eliminada");
