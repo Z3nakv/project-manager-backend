@@ -24,6 +24,7 @@ export const notificationTypes = {
   MEMBER_ADDED: "member_added",
   MEMBER_REMOVED: "member_removed",
   NOTE_ADDED: "note_added",
+  NOTE_DELETED: "note_deleted"
 } as const;
 
 /* export type NotificationType =
