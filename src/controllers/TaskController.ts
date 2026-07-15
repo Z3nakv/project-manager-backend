@@ -4,6 +4,7 @@ import { notifyChangesToTeam } from "../services/notificationService";
 import { Types } from "mongoose";
 
 export class TaskController {
+  
   static createTask = async (req: Request, res: Response) => {
     try {
       const task = new Task(req.body);
@@ -46,6 +47,10 @@ export class TaskController {
       const task = await Task.findById(req.task._id)
         .populate({path: "completedBy", populate: {path: "user"}})
         .populate({ path: "notes", populate: {path: 'createdBy', select: "_id email name"} })
+        .populate({path: "project", populate: [
+        { path: "team", select: "_id" },
+        { path: "manager", select: "_id" },
+      ],})
       
       res.status(200).json(task);
     } catch (error) {

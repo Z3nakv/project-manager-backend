@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 import { notifyChangesToTeam } from "../services/notificationService";
 
 export class ProjectController {
+  
   static createProject = async (req: Request, res: Response) => {
     try {
       const project = await Project.create(req.body);
@@ -49,6 +50,19 @@ export class ProjectController {
                 select: "_id email name",
               },
             },
+            {
+              path: "project",
+              populate: [
+                {
+                  path: "team",
+                  select: "_id"
+                },
+                {
+                  path: "manager",
+                  select: "_id"
+                }
+              ]
+            }
           ],
         })
         .populate("manager", "_id")

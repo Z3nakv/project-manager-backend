@@ -9,9 +9,25 @@ const taskStatus = {
   COMPLETED: "completed",
 } as const;
 
-export type TaskStatus = typeof taskStatus[keyof typeof taskStatus];
-/* export type TaskStatus = (typeof taskStatus)[keyof typeof taskStatus]; */
+const labelColor = {
+  RED: "red",
+  ORANGE: "orange",
+  AMBER: "amber",
+  EMERALD: "emerald",
+  SKY: "sky",
+  INDIGO: "indigo",
+  PURPLE: "purple",
+  PINK: "pink",
+  SLATE: "slate",
+} as const;
 
+export interface ILabel {
+  text: string;
+  color: LabelColor;
+}
+
+export type TaskStatus = typeof taskStatus[keyof typeof taskStatus];
+export type LabelColor = typeof labelColor[keyof typeof labelColor];
 
 export interface ITask extends Document {
     name: string
@@ -24,6 +40,7 @@ export interface ITask extends Document {
     }[]
     notes: Types.ObjectId[]
     deadline: Date | null
+    labels: ILabel[] 
 }
 
 export const TaskSchema : Schema = new Schema({
@@ -69,7 +86,21 @@ export const TaskSchema : Schema = new Schema({
     deadline: {
         type: Date,
         default: null
-    }
+    },
+    labels: [
+        {
+            text: {
+                type: String,
+                trim: true,
+                required: true
+            },
+            color: {
+                type: String,
+                enum: Object.values(labelColor),
+                required: true
+            }
+        }
+    ]
 }, {timestamps: true})
 
 TaskSchema.pre('deleteOne', {document: true}, async function () {
