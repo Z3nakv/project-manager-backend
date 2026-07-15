@@ -64,6 +64,7 @@ export class TaskController {
       req.task.name = req.body.name;
       req.task.description = req.body.description;
       req.task.deadline = req.body.deadline;
+      req.task.labels = req.body.labels ?? req.task.labels;
       await req.task.save();
 
       const members = [...req.project.team, req.project.manager].filter(

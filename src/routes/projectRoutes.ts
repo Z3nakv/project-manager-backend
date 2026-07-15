@@ -53,6 +53,15 @@ router.post('/:projectID/tasks',
     param('projectID').isMongoId().withMessage('El ID no es valido'),
     body('name').notEmpty().withMessage('El nombre de la tarea es necesario'),
     body('description').notEmpty().withMessage('La descripcion es necesaria'),
+    body('labels')
+        .optional()
+        .isArray().withMessage('Las etiquetas deben ser un arreglo'),
+    body('labels.*.text')
+        .notEmpty().withMessage('El texto de la etiqueta es necesario')
+        .isLength({ max: 30 }).withMessage('Máximo 30 caracteres por etiqueta'),
+    body('labels.*.color')
+        .isIn(['red', 'orange', 'amber', 'emerald', 'sky', 'indigo', 'purple', 'pink', 'slate'])
+        .withMessage('Color de etiqueta no válido'),
     handleInputErrors,
     hasProjectAccess,
     TaskController.createTask);
@@ -79,6 +88,15 @@ router.put('/:projectID/tasks/:taskID',
     param('taskID').isMongoId().withMessage('El ID de la tarea no es valida'),
     body('name').notEmpty().withMessage('El nombre de la tarea es necesario'),
     body('description').notEmpty().withMessage('La descripcion es necesaria'),
+    body('labels')
+        .optional()
+        .isArray().withMessage('Las etiquetas deben ser un arreglo'),
+    body('labels.*.text')
+        .notEmpty().withMessage('El texto de la etiqueta es necesario')
+        .isLength({ max: 30 }).withMessage('Máximo 30 caracteres por etiqueta'),
+    body('labels.*.color')
+        .isIn(['red', 'orange', 'amber', 'emerald', 'sky', 'indigo', 'purple', 'pink', 'slate'])
+        .withMessage('Color de etiqueta no válido'),
     handleInputErrors,
     hasProjectAccess,
     TaskController.updateProjectTask);
