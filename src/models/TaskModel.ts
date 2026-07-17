@@ -41,6 +41,7 @@ export interface ITask extends Document {
     notes: Types.ObjectId[]
     deadline: Date | null
     labels: ILabel[] 
+    assignedTo: Types.ObjectId[]
 }
 
 export const TaskSchema : Schema = new Schema({
@@ -99,6 +100,12 @@ export const TaskSchema : Schema = new Schema({
                 enum: Object.values(labelColor),
                 required: true
             }
+        }
+    ],
+    assignedTo : [
+        {
+            type: Types.ObjectId,
+            ref: "User"
         }
     ]
 }, {timestamps: true})

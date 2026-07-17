@@ -13,7 +13,7 @@ export const projectExists = async (req: Request, res: Response, next: NextFunct
     try {
         const { projectID } = req.params;
         const project = await Project.findById(projectID);
-
+        
         if (!project) {
             return res.status(404).json({ message: 'Proyecto no encontrado' });
         }

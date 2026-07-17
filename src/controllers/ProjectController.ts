@@ -21,7 +21,7 @@ export class ProjectController {
       const projects = await Project.find({
         $or: [{ manager: req.user?._id }, { team: { $in: [req.user?._id] } }]})
         .populate("manager", "_id")
-        .populate("team", "_id")
+        .populate("team")
         .populate("tasks", "_id");
       res.status(200).json(projects);
     } catch (error) {
@@ -62,11 +62,16 @@ export class ProjectController {
                   select: "_id"
                 }
               ]
+            },
+            {
+              path: "assignedTo",
+              select: "_id email name avatar"
             }
           ],
         })
         .populate("manager", "_id")
-        .populate("team", "_id");
+        .populate("team", "_id")
+        .populate("assignedToProject")
 
       if (!project) {
         const error = new Error("Proyecto no encontrado");

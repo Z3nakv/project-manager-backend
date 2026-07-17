@@ -8,6 +8,7 @@ import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import { setupSocket } from './socket';
 import notificationsRoute from './routes/notificationRoutes';
+import attachmentRouter from './routes/attachmentRoutes';
 
 configDotenv();
 
@@ -27,14 +28,8 @@ server.use(express.json());
 server.use('/api/notifications', notificationsRoute)
 server.use('/api/auth', authRouter);
 server.use('/api/projects', projectRouter);
+server.use('/api/projects', attachmentRouter);
 
 setupSocket(io);
-
-/* io.on('connection', (socket) => {
-  console.log(socket.id);
-  socket.on("send_message", data => {
-    socket.broadcast.emit("receive_message", data);
-  })
-}); */
 
 export default httpServer ;

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { Note } from "../models/NoteModel";
-import Task from "../models/TaskModel";
 import { Types } from "mongoose";
 import { notifyChangesToTeam } from "../services/notificationService";
 import { io } from "../server";
@@ -110,4 +109,19 @@ export class NoteController {
       res.status(500).json({ error: "Hubo un error" });
     }
   };
+
+  static updateNoteStatus = async (req: Request, res: Response) => {
+    try {
+      const noteID = req.params.noteID;
+      if(!noteID) return res.status(400).json({error: "Hubo un error con el ID de la nota"})
+      const note = await Note.findById(noteID);
+      if(note){
+        note.completed = !note?.completed;
+      }
+      await note?.save()
+      res.status(200).send('Estado de nota actualizado!')
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }

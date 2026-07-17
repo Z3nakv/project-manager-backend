@@ -44,7 +44,7 @@ const ProjectSchema: Schema = new Schema({
             type: Types.ObjectId,
             ref: 'User',
         }
-    ],
+    ]
 }, {timestamps: true})
 
 ProjectSchema.pre('deleteOne', {document: true}, async function () {

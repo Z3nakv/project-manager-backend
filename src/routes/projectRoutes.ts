@@ -118,6 +118,15 @@ router.post('/:projectID/tasks/:taskID/status',
     hasProjectAccess,
     TaskController.updateTaskStatus);
 
+router.post('/:projectID/tasks/:taskID/assign',
+    param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
+    param('taskID').isMongoId().withMessage('ID de tarea no válido'), 
+    handleInputErrors,
+    hasAuthorization,
+    TaskController.assignTask)
+
+// NOTES 
+
 router.post('/:projectID/tasks/:taskID/notes',
     param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
     param('taskID').isMongoId().withMessage('ID de tarea no válido'),
@@ -132,6 +141,12 @@ router.get('/:projectID/tasks/:taskID/notes',
     handleInputErrors,
     hasProjectAccess,
     NoteController.getTaskNotes)
+
+router.put('/:projectID/tasks/:taskID/notes/:noteID/status',
+    param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
+    param('taskID').isMongoId().withMessage('ID de tarea no válido'),
+    param('noteID').isMongoId().withMessage('ID de nota no es valido'),
+    NoteController.updateNoteStatus)
 
 router.delete('/:projectID/tasks/:taskID/notes/:noteID',
     param('projectID').isMongoId().withMessage('ID de proyecto no válido'),

@@ -4,6 +4,7 @@ export interface INote extends Document {
     content: string
     createdBy: Types.ObjectId
     task: Types.ObjectId
+    completed: Boolean
 }
 
 const NoteSchema : Schema = new Schema({
@@ -20,6 +21,10 @@ const NoteSchema : Schema = new Schema({
         type: Types.ObjectId,
         ref: 'Task',
         required: true
+    },
+    completed: {
+        type: Boolean,
+        default: false
     }
 }, {timestamps: true});
 

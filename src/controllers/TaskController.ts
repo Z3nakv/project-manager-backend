@@ -4,7 +4,6 @@ import { notifyChangesToTeam } from "../services/notificationService";
 import { Types } from "mongoose";
 
 export class TaskController {
-  
   static createTask = async (req: Request, res: Response) => {
     try {
       const task = new Task(req.body);
@@ -33,9 +32,8 @@ export class TaskController {
 
   static getProjectTasks = async (req: Request, res: Response) => {
     try {
-      const tasks = await Task.find({ project: req.project._id }).populate(
-        "project",
-      );
+      const tasks = await Task.find({ project: req.project._id })
+      .populate("project")
       res.json(tasks);
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
@@ -45,13 +43,19 @@ export class TaskController {
   static getProjectTask = async (req: Request, res: Response) => {
     try {
       const task = await Task.findById(req.task._id)
-        .populate({path: "completedBy", populate: {path: "user"}})
-        .populate({ path: "notes", populate: {path: 'createdBy', select: "_id email name"} })
-        .populate({path: "project", populate: [
-        { path: "team", select: "_id" },
-        { path: "manager", select: "_id" },
-      ],})
-      
+        .populate({ path: "completedBy", populate: { path: "user" } })
+        .populate({
+          path: "notes",
+          populate: { path: "createdBy", select: "_id email name" },
+        })
+        .populate({
+          path: "project",
+          populate: [
+            { path: "team", select: "_id" },
+            { path: "manager", select: "_id" },
+          ],
+        });
+
       res.status(200).json(task);
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
@@ -59,7 +63,6 @@ export class TaskController {
   };
 
   static updateProjectTask = async (req: Request, res: Response) => {
-    
     try {
       req.task.name = req.body.name;
       req.task.description = req.body.description;
@@ -71,7 +74,7 @@ export class TaskController {
         Boolean,
       ); // elimina undefined y null
 
-        await notifyChangesToTeam({
+      await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
         projectId: req.project._id!,
@@ -79,11 +82,11 @@ export class TaskController {
         actionType: "TASK_UPDATED",
         content: `${req.user!.name} actualizó la tarea "${req.task.name}"`,
       });
-      
-      res.send({ 
-        message: "Tarea Actualizada Correctamente", 
+
+      res.send({
+        message: "Tarea Actualizada Correctamente",
         project: req.project,
-        task: req.task, 
+        task: req.task,
       });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
@@ -151,5 +154,27 @@ export class TaskController {
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
+  };
+
+  static assignTask = async (req: Request, res: Response) => {
+    const { userIDs } = req.body;
+    
+    const validTeamIDs = [
+      ...req.project.team?.map((id) => id?.toString()),
+      req?.project?.manager?.toString(),
+    ];
+    
+    const allValid = userIDs.every((id: string) => validTeamIDs.includes(id));
+    
+    if (!allValid) {
+      return res
+        .status(400)
+        .json({ error: "Solo puedes asignar colaboradores del proyecto" });
+    }
+
+    req.task.assignedTo = userIDs;
+    await req.task.save();
+
+    res.json({ message: "Tarea asignada correctamente" });
   };
 }
