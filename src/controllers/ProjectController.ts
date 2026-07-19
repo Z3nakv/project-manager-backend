@@ -70,14 +70,13 @@ export class ProjectController {
           ],
         })
         .populate("manager", "_id")
-        .populate("team", "_id")
-        .populate("assignedToProject")
+        .populate("team")
 
       if (!project) {
         const error = new Error("Proyecto no encontrado");
         return res.status(404).json({ error: error.message });
       }
-
+      
       res.status(200).json(project);
     } catch (error) {
       console.log(error);
