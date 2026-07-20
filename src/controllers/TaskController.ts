@@ -175,6 +175,6 @@ export class TaskController {
     req.task.assignedTo = userIDs;
     await req.task.save();
 
-    res.json({ message: "Tarea asignada correctamente" });
+    res.json({ message: "Tarea asignada correctamente", taskName: req.task.name, projectName: req.project.projectName, projectID: req.project._id, userIDs: userIDs});
   };
 }

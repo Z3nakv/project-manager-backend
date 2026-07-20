@@ -56,4 +56,11 @@ export const setupSocket = (io: Server) => {
         }
       }); // solo a la sala del proyecto
     });
+
+    socket.on("assignedTask", (data) => {
+      data.userIDs?.forEach(( memberID : string )=> {
+        socket.to(memberID).emit("assigned_task_notification", {message: `La tarea ${data.taskName} del proyecto ${data.projectName} se asigno correctamente`, projectID:data.projectID})
+      });
+      
+    })
 })};
