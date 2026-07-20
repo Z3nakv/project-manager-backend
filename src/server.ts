@@ -1,7 +1,7 @@
+import { configDotenv } from 'dotenv';
 import express from 'express';
 import projectRouter from './routes/projectRoutes';
 import connectDB from './config/db';
-import { configDotenv } from 'dotenv';
 import cors from 'cors';
 import authRouter from './routes/authRoutes';
 import { createServer } from 'node:http';

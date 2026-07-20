@@ -4,7 +4,9 @@ export interface IUser extends Document {
     email: string,
     password: string,
     name: string,
-    confirmed: boolean
+    confirmed: boolean,
+    authProvider: 'local' | 'google'
+    googleId?: string
 }
 
 const userSchema : Schema = new Schema ({
@@ -17,7 +19,20 @@ const userSchema : Schema = new Schema ({
     },
     password: {
         type: String,
-        required: true
+        required: function (this: IUser) {
+            return this.authProvider === 'local'
+        }
+    },
+    authProvider: {
+        type: String,
+        enum: ['local', 'google'],
+        default: 'local'
+    },
+    googleId: {
+        type: String,
+        default: null,
+        sparse: true,
+        unique: true
     },
     name: {
         type: String,

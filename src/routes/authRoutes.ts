@@ -115,4 +115,11 @@ router.post('/check-password',
     handleInputErrors,
     AuthController.checkPassword);
 
+router.post('/google',
+    body('token')
+    .notEmpty().withMessage('El token de Google es obligatorio'),
+    handleInputErrors,
+    AuthController.googleAuth
+)
+
 export default router;
