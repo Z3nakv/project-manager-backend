@@ -20,9 +20,12 @@ export class ProjectController {
     try {
       const projects = await Project.find({
         $or: [{ manager: req.user?._id }, { team: { $in: [req.user?._id] } }]})
-        .populate("manager", "_id")
+        .populate("manager")
         .populate("team")
-        .populate("tasks", "_id");
+        .populate({
+          path: "tasks",
+          select: "status deadline"
+        })
       res.status(200).json(projects);
     } catch (error) {
       console.log(error);
