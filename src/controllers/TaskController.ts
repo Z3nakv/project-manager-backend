@@ -175,6 +175,22 @@ export class TaskController {
     req.task.assignedTo = userIDs;
     await req.task.save();
 
+    const members = [...req.project.team, req.project.manager].filter(
+        Boolean,
+      ); 
+    
+    const assignedTaskMembers = members.filter(member => req.task.assignedTo.some((assignedId) => assignedId.equals(member!._id)))
+
+      await notifyChangesToTeam({
+        members: assignedTaskMembers as Array<{ _id: Types.ObjectId }>,
+        triggeredBy: req.user!._id!,
+        projectId: req.project._id!,
+        taskId: req.task._id!,
+        actionType: "TASK_STATUS_UPDATED",
+        content: `${req.user!.name} te asigno la tarea "${req.task.name}"`,
+      });
+
+
     res.json({ message: "Tarea asignada correctamente", taskName: req.task.name, projectName: req.project.projectName, projectID: req.project._id, userIDs: userIDs});
   };
 }
