@@ -72,7 +72,7 @@ export class ProjectController {
             }
           ],
         })
-        .populate("manager", "_id")
+        .populate("manager")
         .populate("team")
 
       if (!project) {
