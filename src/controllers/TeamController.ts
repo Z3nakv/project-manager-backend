@@ -59,7 +59,7 @@ export class TeamMemberController {
     }
 
     static removeMemberById = async (req: Request, res: Response) => {
-        const _id  = req.params.userID! as string;
+        const _id  = req.params.userId! as string;
         
         if(!req.project.team.some(team => team?.toString() === _id)) {
             const error = new Error('El usuario no existe en el proyecto')

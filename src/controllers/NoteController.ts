@@ -5,7 +5,7 @@ import { notifyChangesToTeam } from "../services/notificationService";
 import { io } from "../server";
 
 type NoteParams = {
-  noteID: Types.ObjectId;
+  noteId: Types.ObjectId;
 };
 
 export class NoteController {
@@ -41,7 +41,7 @@ export class NoteController {
       members
       .filter((member) => member?._id.toString() !== req.user?._id.toString())
       .forEach((member) => {
-        io.to(member?._id.toString()!).emit("note_added", {message: content, projectID: req.project._id})
+        io.to(member?._id.toString()!).emit("note_added", {message: content, projectId: req.project._id})
       })
 
       res.send("Nota Creada Correctamente");
@@ -63,8 +63,8 @@ export class NoteController {
   };
 
   static deleteTaskNote = async (req: Request, res: Response) => {
-    const { noteID } = req.params;
-    const note = await Note.findById(noteID);
+    const { noteId } = req.params;
+    const note = await Note.findById(noteId);
 
     if (!note) {
       const error = new Error("Nota no encontrada");
@@ -77,7 +77,7 @@ export class NoteController {
     }
 
     req.task.notes = req.task.notes.filter(
-      (note) => note.toString() !== noteID.toString(),
+      (note) => note.toString() !== noteId.toString(),
     );
 
     try {
@@ -101,7 +101,7 @@ export class NoteController {
       members
       .filter((member) => member?._id.toString() !== req.user?._id.toString())
       .forEach((member) => {
-        io.to(member?._id.toString()!).emit("note_deleted", {message: content, projectID: req.project._id})
+        io.to(member?._id.toString()!).emit("note_deleted", {message: content, projectId: req.project._id})
       })
       
       res.send("Nota Eliminada");
@@ -112,9 +112,9 @@ export class NoteController {
 
   static updateNoteStatus = async (req: Request, res: Response) => {
     try {
-      const noteID = req.params.noteID;
-      if(!noteID) return res.status(400).json({error: "Hubo un error con el ID de la nota"})
-      const note = await Note.findById(noteID);
+      const noteId = req.params.noteId;
+      if(!noteId) return res.status(400).json({error: "Hubo un error con el Id de la nota"})
+      const note = await Note.findById(noteId);
       if(note){
         note.completed = !note?.completed;
       }

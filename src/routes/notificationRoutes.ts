@@ -9,7 +9,7 @@ router.use(idemPotencyMiddleware);
 
 // routes/notificationRoutes.ts
 router.get('/', authenticate, NotificationController.getNotifications)      // GET /api/notifications
-router.put('/:notificationID/read', authenticate, NotificationController.markAsRead)  // PUT /api/notifications/:id/read
+router.put('/:notificationId/read', authenticate, NotificationController.markAsRead)  // PUT /api/notifications/:id/read
 router.delete('/', authenticate, NotificationController.clearAll)           // DELETE /api/notifications
 
 export default router;

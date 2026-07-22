@@ -157,14 +157,14 @@ export class TaskController {
   };
 
   static assignTask = async (req: Request, res: Response) => {
-    const { userIDs } = req.body;
+    const { userIds } = req.body;
     
-    const validTeamIDs = [
+    const validTeamIds = [
       ...req.project.team?.map((id) => id?.toString()),
       req?.project?.manager?.toString(),
     ];
     
-    const allValid = userIDs.every((id: string) => validTeamIDs.includes(id));
+    const allValid = userIds.every((id: string) => validTeamIds.includes(id));
     
     if (!allValid) {
       return res
@@ -172,7 +172,7 @@ export class TaskController {
         .json({ error: "Solo puedes asignar colaboradores del proyecto" });
     }
 
-    req.task.assignedTo = userIDs;
+    req.task.assignedTo = userIds;
     await req.task.save();
 
     const members = [...req.project.team, req.project.manager].filter(
@@ -191,6 +191,6 @@ export class TaskController {
       });
 
 
-    res.json({ message: "Tarea asignada correctamente", taskName: req.task.name, projectName: req.project.projectName, projectID: req.project._id, userIDs: userIDs});
+    res.json({ message: "Tarea asignada correctamente", taskName: req.task.name, projectName: req.project.projectName, projectId: req.project._id, userIds: userIds});
   };
 }

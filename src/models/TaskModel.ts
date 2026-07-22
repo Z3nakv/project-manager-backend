@@ -112,9 +112,9 @@ export const TaskSchema : Schema = new Schema({
 
 TaskSchema.pre('deleteOne', {document: true}, async function () {
 
-    const taskID = this._id;
-    if(!taskID) return 
-    await Note.deleteMany({task: taskID})
+    const taskId = this._id;
+    if(!taskId) return 
+    await Note.deleteMany({task: taskId})
 })
 
 const Task = mongoose.model<ITask>("Task", TaskSchema);

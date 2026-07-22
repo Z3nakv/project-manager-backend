@@ -17,11 +17,11 @@ export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, tas
   const notificaciones = await Promise.all(
         members
           .filter(
-            (memberID) => memberID?._id.toString() !== triggeredBy.toString(),
+            (memberId) => memberId?._id.toString() !== triggeredBy.toString(),
           ) // excluye al triggeredBy
-          .map((memberID) =>
+          .map((memberId) =>
             NotificationController.createNotification({
-              user: memberID!._id,
+              user: memberId!._id,
               triggeredBy: triggeredBy,
               project: projectId,
               task: taskId ?? undefined,

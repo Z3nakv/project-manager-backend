@@ -40,7 +40,7 @@ export class NotificationController {
   static markAsRead = async (req: Request, res: Response) => {
     try {
       const notification = await Notification.findById(
-        req.params.notificationID,
+        req.params.notificationId,
       );
       if (!notification)
         return res.status(404).json({ error: "Notificación no encontrada" });

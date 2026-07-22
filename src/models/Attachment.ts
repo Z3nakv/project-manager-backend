@@ -7,7 +7,7 @@ export interface IAttachment extends Document {
     uploadedBy: PopulatedDoc<IUser>;
     filename: string;
     url: string;
-    publicID: string;
+    publicId: string;
     mimeType: string;
     size: number;
 }
@@ -29,7 +29,7 @@ const AttachmentSchema: Schema = new Schema({
         type: String,
         trim: true
     },
-    publicID: {
+    publicId: {
         type: String,
         trim: true
     },

@@ -32,11 +32,11 @@ export class ProjectController {
     }
   };
 
-  static getProjectByID = async (req: Request, res: Response) => {
+  static getProjectById = async (req: Request, res: Response) => {
     try {
-      const projectID = req.params.projectID;
+      const projectId = req.params.projectId;
 
-      const project = await Project.findById(projectID)
+      const project = await Project.findById(projectId)
         .populate({
           path: "tasks",
           populate: [

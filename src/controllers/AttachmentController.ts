@@ -18,11 +18,11 @@ export class AttachmentController {
         uploadedBy: req.user?._id,
         filename: req.file.originalname,
         url,
-        publicID: public_id,
+        publicId: public_id,
         mimeType:req.file.mimetype,
         size:req.file.size,
       });
-      if(!attachment.publicID){
+      if(!attachment.publicId){
         return res.status(400).send("Parece que hubo un problema")
       }
       res.status(200).json(attachment);
@@ -32,15 +32,15 @@ export class AttachmentController {
   };
 
   static getTaskAttachments = async (req: Request, res: Response) => {
-    const taskID = req.task._id;
+    const taskId = req.task._id;
     try {
-      const attachments = await Attachment.find({ task: taskID });
+      const attachments = await Attachment.find({ task: taskId });
       if(!attachments) {
         return res.status(400).send('Hubo un problema');
       }
       const taskCardAttachments = attachments.map(attachment => {
         if(attachment.url){
-          attachment.url = getCloudinaryUrl(attachment.publicID, 100, 80)
+          attachment.url = getCloudinaryUrl(attachment.publicId, 100, 80)
           return attachment
         }
         return attachment
@@ -53,10 +53,10 @@ export class AttachmentController {
   };
 
   static deleteTaskAttachment = async (req: Request, res: Response) => {
-    const attachmentID = req.params.imageID!;
+    const attachmentId = req.params.imageId!;
     try {
-      const attachment = await Attachment.findById(attachmentID);
-      await cloudinary.uploader.destroy(attachment?.publicID!);
+      const attachment = await Attachment.findById(attachmentId);
+      await cloudinary.uploader.destroy(attachment?.publicId!);
       const deletedAttachment = await attachment?.deleteOne();
       if(!deletedAttachment?.acknowledged){
         return res.status(400).send("Attachment no se pudo eliminar")

@@ -18,10 +18,10 @@ router.use(idemPotencyMiddleware);
 
 router.get('/', ProjectController.getProjects);
 
-router.get('/:projectID', 
-    param('projectID').isMongoId().withMessage('ID del proyecto no es valido'),
+router.get('/:projectId', 
+    param('projectId').isMongoId().withMessage('Id del proyecto no es valido'),
     handleInputErrors,
-    ProjectController.getProjectByID);
+    ProjectController.getProjectById);
 
 router.post('/create-project', 
     body('projectName').notEmpty().withMessage('El nombre del proyecto es necesario'),
@@ -30,10 +30,10 @@ router.post('/create-project',
     handleInputErrors,
     ProjectController.createProject);
 
-router.param('projectID', projectExists);
+router.param('projectId', projectExists);
 
-router.put('/:projectID',
-    param('projectID').isMongoId().withMessage('El ID no es valido'),
+router.put('/:projectId',
+    param('projectId').isMongoId().withMessage('El Id no es valido'),
     body('projectName').notEmpty().withMessage('El nombre del proyecto es necesario'),
     body('clientName').notEmpty().withMessage('El nombre del cliente es necesario'),
     body('description').notEmpty().withMessage('La descripcion es necesaria'),
@@ -41,16 +41,16 @@ router.put('/:projectID',
     hasAuthorization,
     ProjectController.updateProject);
 
-router.delete('/:projectID', 
-    param('projectID').isMongoId().withMessage('El ID no es valido'),
+router.delete('/:projectId', 
+    param('projectId').isMongoId().withMessage('El Id no es valido'),
     handleInputErrors,
     hasAuthorization,
     ProjectController.deleteProject);
 
     // TASKS
 
-router.post('/:projectID/tasks',
-    param('projectID').isMongoId().withMessage('El ID no es valido'),
+router.post('/:projectId/tasks',
+    param('projectId').isMongoId().withMessage('El Id no es valido'),
     body('name').notEmpty().withMessage('El nombre de la tarea es necesario'),
     body('description').notEmpty().withMessage('La descripcion es necesaria'),
     body('labels')
@@ -66,26 +66,26 @@ router.post('/:projectID/tasks',
     hasProjectAccess,
     TaskController.createTask);
 
-router.get('/:projectID/tasks',
-    param('projectID').isMongoId().withMessage('El ID no es valido'),
+router.get('/:projectId/tasks',
+    param('projectId').isMongoId().withMessage('El Id no es valido'),
     handleInputErrors,
     hasProjectAccess,
     TaskController.getProjectTasks);
 
-router.param('taskID', taskExists);
+router.param('taskId', taskExists);
 
-router.get('/:projectID/tasks/:taskID',
-    param('projectID').isMongoId().withMessage('El ID no es valido'),
-    param('taskID').isMongoId().withMessage('El ID de la tarea no es valida'),
+router.get('/:projectId/tasks/:taskId',
+    param('projectId').isMongoId().withMessage('El Id no es valido'),
+    param('taskId').isMongoId().withMessage('El Id de la tarea no es valida'),
     handleInputErrors,
     hasProjectAccess,
     hasProjectAccess,
     TaskController.getProjectTask);
 
-router.put('/:projectID/tasks/:taskID',
+router.put('/:projectId/tasks/:taskId',
     hasAuthorization,
-    param('projectID').isMongoId().withMessage('El ID del proyecto no es valido'),
-    param('taskID').isMongoId().withMessage('El ID de la tarea no es valida'),
+    param('projectId').isMongoId().withMessage('El Id del proyecto no es valido'),
+    param('taskId').isMongoId().withMessage('El Id de la tarea no es valida'),
     body('name').notEmpty().withMessage('El nombre de la tarea es necesario'),
     body('description').notEmpty().withMessage('La descripcion es necesaria'),
     body('labels')
@@ -101,81 +101,81 @@ router.put('/:projectID/tasks/:taskID',
     hasProjectAccess,
     TaskController.updateProjectTask);
 
-router.delete('/:projectID/tasks/:taskID',
+router.delete('/:projectId/tasks/:taskId',
     hasAuthorization,
-    param('projectID').isMongoId().withMessage('El ID del proyecto no es valido'),
-    param('taskID').isMongoId().withMessage('El ID de la tarea no es valida'),
+    param('projectId').isMongoId().withMessage('El Id del proyecto no es valido'),
+    param('taskId').isMongoId().withMessage('El Id de la tarea no es valida'),
     handleInputErrors,
     hasProjectAccess,
     TaskController.deleteProjectTask);
 
-router.post('/:projectID/tasks/:taskID/status',
-    param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
-    param('taskID').isMongoId().withMessage('ID de tarea no válido'),
+router.post('/:projectId/tasks/:taskId/status',
+    param('projectId').isMongoId().withMessage('Id de proyecto no válido'),
+    param('taskId').isMongoId().withMessage('Id de tarea no válido'),
     body('status').notEmpty().withMessage('No hay informacion sobre el estado'),
     body('status').isString().withMessage('El estado no es valido'),
     handleInputErrors,
     hasProjectAccess,
     TaskController.updateTaskStatus);
 
-router.post('/:projectID/tasks/:taskID/assign',
-    param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
-    param('taskID').isMongoId().withMessage('ID de tarea no válido'), 
+router.post('/:projectId/tasks/:taskId/assign',
+    param('projectId').isMongoId().withMessage('Id de proyecto no válido'),
+    param('taskId').isMongoId().withMessage('Id de tarea no válido'), 
     handleInputErrors,
     hasAuthorization,
     TaskController.assignTask)
 
 // NOTES 
 
-router.post('/:projectID/tasks/:taskID/notes',
-    param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
-    param('taskID').isMongoId().withMessage('ID de tarea no válido'),
+router.post('/:projectId/tasks/:taskId/notes',
+    param('projectId').isMongoId().withMessage('Id de proyecto no válido'),
+    param('taskId').isMongoId().withMessage('Id de tarea no válido'),
     body('content').notEmpty().withMessage('El contenido no puede estar vacio'),
     handleInputErrors,
     hasProjectAccess,
     NoteController.createNote)
 
-router.get('/:projectID/tasks/:taskID/notes',
-    param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
-    param('taskID').isMongoId().withMessage('ID de tarea no válido'),
+router.get('/:projectId/tasks/:taskId/notes',
+    param('projectId').isMongoId().withMessage('Id de proyecto no válido'),
+    param('taskId').isMongoId().withMessage('Id de tarea no válido'),
     handleInputErrors,
     hasProjectAccess,
     NoteController.getTaskNotes)
 
-router.put('/:projectID/tasks/:taskID/notes/:noteID/status',
-    param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
-    param('taskID').isMongoId().withMessage('ID de tarea no válido'),
-    param('noteID').isMongoId().withMessage('ID de nota no es valido'),
+router.put('/:projectId/tasks/:taskId/notes/:noteId/status',
+    param('projectId').isMongoId().withMessage('Id de proyecto no válido'),
+    param('taskId').isMongoId().withMessage('Id de tarea no válido'),
+    param('noteId').isMongoId().withMessage('Id de nota no es valido'),
     NoteController.updateNoteStatus)
 
-router.delete('/:projectID/tasks/:taskID/notes/:noteID',
-    param('projectID').isMongoId().withMessage('ID de proyecto no válido'),
-    param('taskID').isMongoId().withMessage('ID de tarea no válido'),
-    param('noteID').isMongoId().withMessage('ID de nota no válido'),
+router.delete('/:projectId/tasks/:taskId/notes/:noteId',
+    param('projectId').isMongoId().withMessage('Id de proyecto no válido'),
+    param('taskId').isMongoId().withMessage('Id de tarea no válido'),
+    param('noteId').isMongoId().withMessage('Id de nota no válido'),
     handleInputErrors,
     hasProjectAccess,
     NoteController.deleteTaskNote);
 
 /** Routes for teams */
 
-router.post('/:projectID/team/find',
+router.post('/:projectId/team/find',
     body('email')
         .isEmail().toLowerCase().withMessage('E-mail no válido'),
     handleInputErrors,
     TeamMemberController.findMemberByEmail);
 
-router.get('/:projectID/team',
+router.get('/:projectId/team',
     TeamMemberController.getProjecTeam);
 
-router.post('/:projectID/team',
+router.post('/:projectId/team',
     body('_id')
-        .isMongoId().withMessage('ID No válido'),
+        .isMongoId().withMessage('Id No válido'),
     handleInputErrors,
     TeamMemberController.addMemberById);
 
-router.delete('/:projectID/team/:userID',
-    param('userID')
-        .isMongoId().withMessage('ID No válido'),
+router.delete('/:projectId/team/:userId',
+    param('userId')
+        .isMongoId().withMessage('Id No válido'),
     handleInputErrors,
     TeamMemberController.removeMemberById);
     

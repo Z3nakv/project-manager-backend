@@ -11,8 +11,8 @@ declare global {
 
 export async function taskExists( req: Request, res: Response, next: NextFunction ) {
     try {
-        const { taskID } = req.params
-        const task = await Task.findById(taskID);
+        const { taskId } = req.params
+        const task = await Task.findById(taskId);
         if(!task) {
             const error = new Error('Tarea no encontrada')
             return res.status(404).json({error: error.message})

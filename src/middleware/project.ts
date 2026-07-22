@@ -11,8 +11,8 @@ declare global {
 
 export const projectExists = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { projectID } = req.params;
-        const project = await Project.findById(projectID);
+        const { projectId } = req.params;
+        const project = await Project.findById(projectId);
         
         if (!project) {
             return res.status(404).json({ message: 'Proyecto no encontrado' });
