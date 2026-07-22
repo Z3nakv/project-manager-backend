@@ -9,6 +9,7 @@ import { Server } from 'socket.io';
 import { setupSocket } from './socket';
 import notificationsRoute from './routes/notificationRoutes';
 import attachmentRouter from './routes/attachmentRoutes';
+import aiRoutes from './routes/aiRoutes';
 
 configDotenv();
 
@@ -25,10 +26,11 @@ server.use(cors());
 
 server.use(express.json());
 
-server.use('/api/notifications', notificationsRoute)
+server.use('/api/notifications', notificationsRoute);
 server.use('/api/auth', authRouter);
 server.use('/api/projects', projectRouter);
 server.use('/api/projects', attachmentRouter);
+server.use('/api/projects', aiRoutes);
 
 setupSocket(io);
 
