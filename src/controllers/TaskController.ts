@@ -191,6 +191,10 @@ export class TaskController {
       });
 
 
-    res.json({ message: "Tarea asignada correctamente", taskName: req.task.name, projectName: req.project.projectName, projectId: req.project._id, userIds: userIds});
+    res.json({ 
+      message: "Tarea asignada correctamente", 
+      taskName: req.task.name, 
+      projectName: req.project.projectName, 
+      projectId: req.project._id, userIds: userIds});
   };
 }
