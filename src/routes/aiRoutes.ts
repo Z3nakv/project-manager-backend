@@ -1,11 +1,14 @@
 import { Router } from "express"
-import { getTasksSuggestions } from "../controllers/aiController";
-import { param } from "express-validator";
+import { body, param } from "express-validator";
+import { AiTasksCreationController } from "../controllers/AiController";
+import { handleInputErrors } from "../middleware/validation";
 
 const router = Router();
 
-router.get('/:projectId/suggest-tasks', 
+router.post('/:projectId/suggest-tasks', 
     param('projectId').isMongoId().withMessage('Id de proyecto no válido'),
-    getTasksSuggestions);
+    body('selectedFields').notEmpty().withMessage('Task props not valid'),
+    handleInputErrors,
+    AiTasksCreationController.getTasksSuggestions);
 
 export default router;
