@@ -53,8 +53,8 @@ export class TaskController {
           populate: [
             { path: "team", select: "_id" },
             { path: "manager", select: "_id" },
-          ],
-        });
+          ]
+        }).select('-assignedTo')
 
       res.status(200).json(task);
     } catch (error) {

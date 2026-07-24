@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import Project from "../models/ProjectModel"
 
 export const getProjectById = async (projectId: string) => {
@@ -39,4 +40,11 @@ export const getProjectById = async (projectId: string) => {
             })
             .populate("manager")
             .populate("team")
+}
+
+export const createProject = async (body: {name:string, description:string}, userId:Types.ObjectId) => {
+  const project = await Project.create(body);
+      project.manager = userId;
+      await project.save(); 
+      return project;
 }

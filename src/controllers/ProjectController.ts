@@ -2,14 +2,18 @@ import { Request, Response } from "express";
 import Project from "../models/ProjectModel";
 import { Types } from "mongoose";
 import { notifyChangesToTeam } from "../services/notificationService";
+import { createProject } from "../services/projectService";
 
 export class ProjectController {
-  
   static createProject = async (req: Request, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: "No autenticado" });
+      return;
+    }
+    const userId = req.user._id;
+    const body = req.body;
     try {
-      const project = await Project.create(req.body);
-      project.manager = req.user?._id;
-      await project.save();
+      await createProject(body, userId);
       res.status(201).send("Proyecto creado correctamente");
     } catch (error) {
       console.log(error);
@@ -19,13 +23,14 @@ export class ProjectController {
   static getProjects = async (req: Request, res: Response) => {
     try {
       const projects = await Project.find({
-        $or: [{ manager: req.user?._id }, { team: { $in: [req.user?._id] } }]})
+        $or: [{ manager: req.user?._id }, { team: { $in: [req.user?._id] } }],
+      })
         .populate("manager")
         .populate("team")
         .populate({
           path: "tasks",
-          select: "status deadline"
-        })
+          select: "status deadline",
+        });
       res.status(200).json(projects);
     } catch (error) {
       console.log(error);
@@ -57,28 +62,28 @@ export class ProjectController {
               populate: [
                 {
                   path: "team",
-                  select: "_id"
+                  select: "_id",
                 },
                 {
                   path: "manager",
-                  select: "_id"
-                }
-              ]
+                  select: "_id",
+                },
+              ],
             },
             {
               path: "assignedTo",
-              select: "_id email name avatar"
-            }
+              select: "_id email name avatar",
+            },
           ],
         })
         .populate("manager")
-        .populate("team")
+        .populate("team");
 
       if (!project) {
         const error = new Error("Proyecto no encontrado");
         return res.status(404).json({ error: error.message });
       }
-      
+
       res.status(200).json(project);
     } catch (error) {
       console.log(error);
@@ -104,7 +109,7 @@ export class ProjectController {
         actionType: "PROJECT_UPDATED",
         content: `${req.user!.name} actualizó el proyecto "${req.project.projectName}"`,
       });
-      
+
       res.send("Proyecto Actualizado");
     } catch (error) {
       console.log(error);
