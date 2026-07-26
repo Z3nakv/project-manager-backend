@@ -42,9 +42,19 @@ export const getProjectById = async (projectId: string) => {
             .populate("team")
 }
 
-export const createProject = async (body: {name:string, description:string}, userId:Types.ObjectId) => {
+export const createProject = async (body:{projectName:string, clientName:string, description:string}, userId:Types.ObjectId) => {
   const project = await Project.create(body);
       project.manager = userId;
       await project.save(); 
       return project;
+}
+
+type updateProjectProps = {
+  project: {clientName:string, projectName:string, description:string}
+   body:{clientName:string, projectName:string, description:string}
+}
+export const updateProject = async ({project, body}: updateProjectProps) => {
+    project.clientName = body.clientName;
+    project.projectName = body.projectName;
+    project.description = body.description;
 }

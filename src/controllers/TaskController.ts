@@ -9,7 +9,7 @@ export class TaskController {
       const task = new Task(req.body);
       task.project = req.project._id;
       req.project.tasks.push(task._id);
-      await Promise.allSettled([task.save(), req.project.save()]);
+      await Promise.all([task.save(), req.project.save()]);
 
       const members = [...req.project.team, req.project.manager].filter(
         Boolean,
@@ -98,7 +98,7 @@ export class TaskController {
       req.project.tasks = req.project.tasks.filter(
         (task) => task?._id.toString() !== req.task._id.toString(),
       );
-      await Promise.allSettled([req.task.deleteOne(), req.project.save()]);
+      await Promise.all([req.task.deleteOne(), req.project.save()]);
 
       const members = [...req.project.team, req.project.manager].filter(
         Boolean,
@@ -157,15 +157,16 @@ export class TaskController {
   };
 
   static assignTask = async (req: Request, res: Response) => {
+  try {
     const { userIds } = req.body;
-    
+
     const validTeamIds = [
       ...req.project.team?.map((id) => id?.toString()),
       req?.project?.manager?.toString(),
     ];
-    
+
     const allValid = userIds.every((id: string) => validTeamIds.includes(id));
-    
+
     if (!allValid) {
       return res
         .status(400)
@@ -176,25 +177,31 @@ export class TaskController {
     await req.task.save();
 
     const members = [...req.project.team, req.project.manager].filter(
-        Boolean,
-      ); 
-    
-    const assignedTaskMembers = members.filter(member => req.task.assignedTo.some((assignedId) => assignedId.equals(member!._id)))
+      Boolean,
+    );
 
-      await notifyChangesToTeam({
-        members: assignedTaskMembers as Array<{ _id: Types.ObjectId }>,
-        triggeredBy: req.user!._id!,
-        projectId: req.project._id!,
-        taskId: req.task._id!,
-        actionType: "TASK_STATUS_UPDATED",
-        content: `${req.user!.name} te asigno la tarea "${req.task.name}"`,
-      });
+    const assignedTaskMembers = members.filter(member =>
+      req.task.assignedTo.some((assignedId) => assignedId.equals(member!._id))
+    );
 
+    await notifyChangesToTeam({
+      members: assignedTaskMembers as Array<{ _id: Types.ObjectId }>,
+      triggeredBy: req.user!._id!,
+      projectId: req.project._id!,
+      taskId: req.task._id!,
+      actionType: "TASK_STATUS_UPDATED",
+      content: `${req.user!.name} te asigno la tarea "${req.task.name}"`,
+    });
 
-    res.json({ 
-      message: "Tarea asignada correctamente", 
-      taskName: req.task.name, 
-      projectName: req.project.projectName, 
-      projectId: req.project._id, userIds: userIds});
-  };
+    res.json({
+      message: "Tarea asignada correctamente",
+      taskName: req.task.name,
+      projectName: req.project.projectName,
+      projectId: req.project._id,
+      userIds: userIds,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Hubo un error" });
+  }
+};
 }

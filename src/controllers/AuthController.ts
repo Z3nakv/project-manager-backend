@@ -37,7 +37,7 @@ export class AuthController {
         token: token.token,
       });
 
-      await Promise.allSettled([user.save(), token.save()]);
+      await Promise.all([user.save(), token.save()]);
       res.send("Cuenta creada!, Revisa tu email para confirmarla");
     } catch (error) {
       res.status(500).send("Hubo un error");
@@ -54,11 +54,14 @@ export class AuthController {
       }
 
       const user = await User.findById(tokenExists.user);
-      if (user) {
-        user.confirmed = true;
+      if (!user) {
+        const error = new Error(
+          "El usuario asociado a este token ya no existe",
+        );
+        return res.status(404).json({ error: error.message });
       }
-
-      await Promise.allSettled([user?.save(), tokenExists.deleteOne()]);
+      user.confirmed = true;
+      await Promise.all([user?.save(), tokenExists.deleteOne()]);
 
       res.send("Cuenta confirmada correctamente");
     } catch (error) {
@@ -165,7 +168,7 @@ export class AuthController {
       token.token = generateToken();
       token.user = user._id;
 
-      token.save();
+      await token.save();
 
       //enviar el email
       await AuthEmail.sendPasswordResetToken({
@@ -209,11 +212,15 @@ export class AuthController {
       }
 
       const user = await User.findById(tokenExists.user);
-      if (user) {
-        user.password = await hashPassword(req.body.password);
+      if (!user) {
+        const error = new Error(
+          "El usuario asociado a este token ya no existe",
+        );
+        return res.status(404).json({ error: error.message });
       }
+      user.password = await hashPassword(req.body.password);
 
-      await Promise.allSettled([user?.save(), tokenExists.deleteOne()]);
+      await Promise.all([user?.save(), tokenExists.deleteOne()]);
 
       res.send("El password se modifico correctamente");
     } catch (error) {
@@ -288,23 +295,19 @@ export class AuthController {
 
   static googleAuth = async (req: Request, res: Response) => {
     const { token } = req.body;
-    console.log(token);
-    try{
-    const response = await fetch(
-      "https://www.googleapis.com/oauth2/v3/userinfo",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+    try {
+      const response = await fetch(
+        "https://www.googleapis.com/oauth2/v3/userinfo",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
+      );
+      if (!response.ok) {
+        return res.status(401).json({ error: "Token de Google inválido" });
       }
-    );
-    if (!response.ok) {
-      return res
-        .status(401)
-        .json({ error: "Token de Google inválido" });
-    }
-    const payload = await response.json();
-
+      const payload = await response.json();
 
       if (!payload) {
         const error = new Error("Token inválido");
@@ -315,11 +318,17 @@ export class AuthController {
 
       if (!email_verified) {
         const error = new Error("Email de Google no verificado");
-        console.log(error);
         return res.status(400).json({ error: error.message });
       }
 
       let user = await User.findOne({ email });
+
+      if (user && user.authProvider !== 'google') {
+      const error = new Error(
+        'Este email ya está registrado con otro método. Inicia sesión con tu contraseña.'
+      );
+      return res.status(409).json({ error: error.message });
+    }
 
       if (!user) {
         // usuario nuevo vía Google, sin password
@@ -336,7 +345,9 @@ export class AuthController {
 
       res.json({ user, token: jwtToken });
     } catch (error) {
-      res.status(401).json({ error: "No se pudo verificar el token de Google" });
+      res
+        .status(401)
+        .json({ error: "No se pudo verificar el token de Google" });
     }
   };
 }

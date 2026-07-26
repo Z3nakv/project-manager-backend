@@ -13,31 +13,27 @@ type NotifyTaskStatusParams = {
 };
 
 export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, taskId, actionType, content }: NotifyTaskStatusParams) => {
-  
-  const notificaciones = await Promise.all(
-        members
-          .filter(
-            (memberId) => memberId?._id.toString() !== triggeredBy.toString(),
-          ) // excluye al triggeredBy
-          .map((memberId) =>
-            NotificationController.createNotification({
-              user: memberId!._id,
-              triggeredBy: triggeredBy,
-              project: projectId,
-              task: taskId ?? undefined,
-              type: notificationTypes[actionType! as keyof typeof notificationTypes] as NotificationType,
-              content: `${content}`,
-            }),
-          ),
-      );
 
-      // emite la notificación a cada usuario
-      notificaciones.forEach((notification) => {
-        if (notification) {
-          io.to(notification?.user!.toString()).emit(
-            "static_notification",
-            notification,
-          );
-        }
-      });
+  const results = await Promise.allSettled(
+    members
+      .filter((memberId) => memberId?._id.toString() !== triggeredBy.toString())
+      .map((memberId) =>
+        NotificationController.createNotification({
+          user: memberId!._id,
+          triggeredBy: triggeredBy,
+          project: projectId,
+          task: taskId ?? undefined,
+          type: notificationTypes[actionType! as keyof typeof notificationTypes] as NotificationType,
+          content: `${content}`,
+        }),
+      ),
+  );
+
+  results.forEach((result) => {
+    if (result.status === 'fulfilled' && result.value) {
+      io.to(result.value.user!.toString()).emit('static_notification', result.value);
+    } else if (result.status === 'rejected') {
+      console.error('Error al crear notificación:', result.reason);
+    }
+  });
 }

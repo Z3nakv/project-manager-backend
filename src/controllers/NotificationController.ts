@@ -17,7 +17,7 @@ export class NotificationController {
       const notification = await Notification.create(data);
       return notification;
     } catch (error) {
-      console.log(error);
+      throw error;
     }
   };
 
@@ -30,23 +30,21 @@ export class NotificationController {
         .populate('user', '_id name email')
         .sort({ createdAt: -1 })
         .limit(20);
-        
+
       res.json(notifications);
     } catch (error) {
+      console.log(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
 
   static markAsRead = async (req: Request, res: Response) => {
     try {
-      const notification = await Notification.findById(
-        req.params.notificationId,
-      );
+      const notification = await Notification.findById(req.params.notificationId);
       if (!notification)
         return res.status(404).json({ error: "Notificación no encontrada" });
 
-      // verificar que la notificación pertenece al usuario
-      if (notification.user?._id.toString() !== req.user?._id.toString()) {
+      if (notification.user?.toString() !== req.user?._id.toString()) {
         return res.status(403).json({ error: "Acción no permitida" });
       }
 

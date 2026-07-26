@@ -30,7 +30,6 @@ const userSchema : Schema = new Schema ({
     },
     googleId: {
         type: String,
-        default: null,
         sparse: true,
         unique: true
     },

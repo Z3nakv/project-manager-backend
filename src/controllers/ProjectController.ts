@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import Project from "../models/ProjectModel";
 import { Types } from "mongoose";
 import { notifyChangesToTeam } from "../services/notificationService";
-import { createProject } from "../services/projectService";
+import { createProject, getProjectById, updateProject } from "../services/projectService";
 
 export class ProjectController {
   static createProject = async (req: Request, res: Response) => {
@@ -16,7 +16,7 @@ export class ProjectController {
       await createProject(body, userId);
       res.status(201).send("Proyecto creado correctamente");
     } catch (error) {
-      console.log(error);
+      res.status(500).json({ error: "Hubo un error al crear el proyecto" });
     }
   };
 
@@ -33,51 +33,14 @@ export class ProjectController {
         });
       res.status(200).json(projects);
     } catch (error) {
-      console.log(error);
+      res.status(500).json({ error: "Hubo un error al obtener los proyectos" });
     }
   };
 
   static getProjectById = async (req: Request, res: Response) => {
-    const projectId = req.params.projectId;
+    const projectId = req.params.projectId as string;
     try {
-      const project = await Project.findById(projectId)
-        .populate({
-          path: "tasks",
-          populate: [
-            {
-              path: "notes",
-              populate: {
-                path: "createdBy",
-              },
-            },
-            {
-              path: "completedBy",
-              populate: {
-                path: "user",
-                select: "_id email name",
-              },
-            },
-            {
-              path: "project",
-              populate: [
-                {
-                  path: "team",
-                  select: "_id",
-                },
-                {
-                  path: "manager",
-                  select: "_id",
-                },
-              ],
-            },
-            {
-              path: "assignedTo",
-              select: "_id email name avatar",
-            },
-          ],
-        })
-        .populate("manager")
-        .populate("team");
+      const project = await getProjectById(projectId);
 
       if (!project) {
         const error = new Error("Proyecto no encontrado");
@@ -86,21 +49,19 @@ export class ProjectController {
 
       res.status(200).json(project);
     } catch (error) {
-      console.log(error);
+      res.status(500).json({ error: "Hubo un error al obtener el proyecto" });
     }
   };
 
   static updateProject = async (req: Request, res: Response) => {
+    const project = req.project;
+    const body = req.body;
     try {
-      req.project.clientName = req.body.clientName;
-      req.project.projectName = req.body.projectName;
-      req.project.description = req.body.description;
-
+      await updateProject({project, body});
+      await req.project.save();
       const members = [...req.project.team, req.project.manager].filter(
         Boolean,
       ); // elimina undefined y null
-      await req.project.save();
-
       await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
@@ -109,21 +70,16 @@ export class ProjectController {
         actionType: "PROJECT_UPDATED",
         content: `${req.user!.name} actualizó el proyecto "${req.project.projectName}"`,
       });
-
       res.send("Proyecto Actualizado");
     } catch (error) {
-      console.log(error);
+      res.status(500).json({ error: "Hubo un error al actualizar el proyecto" });
     }
   };
 
   static deleteProject = async (req: Request, res: Response) => {
     try {
       await req.project.deleteOne();
-
-      const members = [...req.project.team, req.project.manager].filter(
-        Boolean,
-      ); // elimina undefined y null
-
+      const members = [...req.project.team, req.project.manager].filter(Boolean); // elimina undefined y null
       await notifyChangesToTeam({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: req.user!._id!,
@@ -132,10 +88,9 @@ export class ProjectController {
         actionType: "PROJECT_DELETED",
         content: `${req.user!.name} eliminó el proyecto "${req.project.projectName}"`,
       });
-
       res.send("Proyecto Eliminado");
     } catch (error) {
-      console.log(error);
+      res.status(500).json({ error: "Hubo un error al eliminar el proyecto" });
     }
   };
 }
