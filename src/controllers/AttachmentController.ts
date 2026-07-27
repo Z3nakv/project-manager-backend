@@ -70,7 +70,7 @@ export class AttachmentController {
       if (!deletedAttachment?.acknowledged) {
         return res.status(400).send("Attachment no se pudo eliminar");
       }
-      res.status(200).send("Attachment eliminado correctamente");
+      res.status(200).json({message:"Attachment eliminado correctamente"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }

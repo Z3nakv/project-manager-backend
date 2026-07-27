@@ -33,7 +33,7 @@ export class NotificationController {
 
       notification.read = true;
       await notification.save();
-      res.json("Notificación leída");
+      res.json({message: "Notificación leída"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -42,7 +42,7 @@ export class NotificationController {
   static clearAll = async (req: Request, res: Response) => {
     try {
       await Notification.deleteMany({ user: req.user?._id });
-      res.json("Notificaciones eliminadas");
+      res.json({message: "Notificaciones eliminadas"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }

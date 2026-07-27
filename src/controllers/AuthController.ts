@@ -38,7 +38,7 @@ export class AuthController {
       });
 
       await Promise.all([user.save(), token.save()]);
-      res.send("Cuenta creada!, Revisa tu email para confirmarla");
+      res.json({message: "Cuenta creada!, Revisa tu email para confirmarla"});
     } catch (error) {
       res.status(500).send("Hubo un error");
     }
@@ -63,7 +63,7 @@ export class AuthController {
       user.confirmed = true;
       await Promise.all([user?.save(), tokenExists.deleteOne()]);
 
-      res.send("Cuenta confirmada correctamente");
+      res.json({message: "Cuenta confirmada correctamente"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -108,7 +108,7 @@ export class AuthController {
 
       const token = generateJWT({ id: user._id });
 
-      res.send(token);
+      res.json(token);
     } catch (error) {
       console.log(error);
 
@@ -146,7 +146,7 @@ export class AuthController {
 
       await Promise.allSettled([user.save(), token.save()]);
 
-      res.send("Se envio un nuevo token, Revisa tu email para confirmarla");
+      res.json({message: "Se envio un nuevo token, Revisa tu email para confirmarla"});
     } catch (error) {
       res.status(500).send("Hubo un error");
     }
@@ -177,7 +177,7 @@ export class AuthController {
         token: token.token,
       });
 
-      res.send("Revisa tu email para instrucciones");
+      res.json({message: "Revisa tu email para instrucciones"});
     } catch (error) {
       res.status(500).send("Hubo un error");
     }
@@ -194,7 +194,7 @@ export class AuthController {
         return res.status(404).json({ error: error.message });
       }
 
-      res.send("Token valido, Define tu nuevo password");
+      res.json({message: "Token valido, Define tu nuevo password"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -222,7 +222,7 @@ export class AuthController {
 
       await Promise.all([user?.save(), tokenExists.deleteOne()]);
 
-      res.send("El password se modifico correctamente");
+      res.json({message: "El password se modifico correctamente"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -249,7 +249,7 @@ export class AuthController {
 
     try {
       await req.user?.save();
-      res.send("Perfil actualizado correctamente");
+      res.json({message: "Perfil actualizado correctamente"});
     } catch (error) {
       res.status(500).send("Hubo un error");
     }
@@ -273,7 +273,7 @@ export class AuthController {
     try {
       user!.password = await hashPassword(password);
       await user!.save();
-      res.send("El password se modifico correctamente");
+      res.json({message: "El password se modifico correctamente"});
     } catch (error) {
       res.status(500).send("Hubo un error");
     }
@@ -290,7 +290,7 @@ export class AuthController {
       return res.status(401).json({ error: error.message });
     }
 
-    res.send("Password Correcto");
+    res.json({message: "Password Correcto"});
   };
 
   static googleAuth = async (req: Request, res: Response) => {
