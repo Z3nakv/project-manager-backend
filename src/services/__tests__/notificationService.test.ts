@@ -1,14 +1,8 @@
-// src/services/__tests__/notificationService.test.ts
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Types } from 'mongoose';
-import { notifyChangesToTeam } from '../notificationService';
-import { NotificationController } from '../../controllers/NotificationController';
-
-vi.mock('../../controllers/NotificationController', () => ({
-  NotificationController: {
-    createNotification: vi.fn(),
-  },
-}));
+import * as notificationService from '../notificationService';
+import Notification from '../../models/NotificationModel';
 
 vi.mock('../../server', () => ({
   io: {
@@ -27,12 +21,12 @@ describe('notifyChangesToTeam', () => {
     const member1 = new Types.ObjectId();
     const member2 = new Types.ObjectId();
 
-    vi.mocked(NotificationController.createNotification).mockResolvedValue({
+    vi.spyOn(Notification, 'create').mockResolvedValue({
       _id: new Types.ObjectId(),
       user: member1,
     } as any);
 
-    await notifyChangesToTeam({
+    await notificationService.notifyChangesToTeam({
       members: [{ _id: triggeredBy }, { _id: member1 }, { _id: member2 }],
       triggeredBy,
       projectId: new Types.ObjectId(),
@@ -42,7 +36,7 @@ describe('notifyChangesToTeam', () => {
     });
 
     // Solo 2 llamadas — excluye al triggeredBy (member1, member2, no triggeredBy)
-    expect(NotificationController.createNotification).toHaveBeenCalledTimes(2);
+    expect(Notification.create).toHaveBeenCalledTimes(2);
   });
 
   it('NO debe fallar por completo si UNA notificación individual falla (bug corregido)', async () => {
@@ -50,14 +44,14 @@ describe('notifyChangesToTeam', () => {
     const member1 = new Types.ObjectId();
     const member2 = new Types.ObjectId();
 
-    vi.mocked(NotificationController.createNotification)
+    vi.spyOn(Notification, 'create')
       .mockRejectedValueOnce(new Error('Fallo en la primera notificación'))
       .mockResolvedValueOnce({ _id: new Types.ObjectId(), user: member2 } as any);
 
     // Antes del fix (Promise.all), esto habría lanzado y roto la función completa.
     // Con Promise.allSettled, debe resolver sin lanzar.
     await expect(
-      notifyChangesToTeam({
+      notificationService.notifyChangesToTeam({
         members: [{ _id: member1 }, { _id: member2 }],
         triggeredBy,
         projectId: new Types.ObjectId(),
@@ -68,6 +62,6 @@ describe('notifyChangesToTeam', () => {
     ).resolves.not.toThrow();
 
     // Ambas notificaciones se intentaron, aunque una fallara
-    expect(NotificationController.createNotification).toHaveBeenCalledTimes(2);
+    expect(Notification.create).toHaveBeenCalledTimes(2);
   });
 });
