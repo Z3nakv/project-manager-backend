@@ -1,25 +1,8 @@
 import { Request, Response } from "express";
-import Notification, { NotificationType } from "../models/NotificationModel";
-import { Types } from "mongoose";
+import Notification from "../models/NotificationModel";
 
-type CreateNotifcationProps = {
-    user: Types.ObjectId;
-    triggeredBy: Types.ObjectId;
-    project: Types.ObjectId;
-    task?: Types.ObjectId;
-    type: NotificationType;
-    content: string;
-}
 
 export class NotificationController {
-  static createNotification = async (data: CreateNotifcationProps) => {
-    try {
-      const notification = await Notification.create(data);
-      return notification;
-    } catch (error) {
-      throw error;
-    }
-  };
 
   static getNotifications = async (req: Request, res: Response) => {
     try {

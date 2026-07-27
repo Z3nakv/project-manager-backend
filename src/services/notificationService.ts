@@ -1,6 +1,5 @@
 import { Types } from "mongoose";
-import { NotificationController } from "../controllers/NotificationController";
-import { NotificationType, notificationTypes } from "../models/NotificationModel";
+import Notification, { NotificationType, notificationTypes } from "../models/NotificationModel";
 import { io } from "../server";
 
 type NotifyTaskStatusParams = {
@@ -12,13 +11,26 @@ type NotifyTaskStatusParams = {
   actionType?: string;
 };
 
+type CreateNotifcationProps = {
+    user: Types.ObjectId;
+    triggeredBy: Types.ObjectId;
+    project: Types.ObjectId;
+    task?: Types.ObjectId;
+    type: NotificationType;
+    content: string;
+}
+
+export const createNotification = async (data: CreateNotifcationProps) => {
+      return await Notification.create(data);
+};
+
 export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, taskId, actionType, content }: NotifyTaskStatusParams) => {
 
   const results = await Promise.allSettled(
     members
       .filter((memberId) => memberId?._id.toString() !== triggeredBy.toString())
       .map((memberId) =>
-        NotificationController.createNotification({
+        createNotification({
           user: memberId!._id,
           triggeredBy: triggeredBy,
           project: projectId,

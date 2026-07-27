@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import Task from "../models/TaskModel";
 import { notifyChangesToTeam } from "../services/notificationService";
 import { Types } from "mongoose";
-import User from "../models/UserModel";
 
 export class TaskController {
   static createTask = async (req: Request, res: Response) => {
@@ -25,13 +24,14 @@ export class TaskController {
         content: `${req.user!.name} creó la tarea "${task.name}"`,
       });
 
-      res.json({ 
-        message: "Tarea creada correctamente", 
+      res.json({
+        message: "Tarea creada correctamente",
         project: {
-          projectName: req.project.projectName, 
-          projectTeam: req.project.team, 
-          projectId: req.project._id
-        }});
+          projectName: req.project.projectName,
+          projectTeam: req.project.team,
+          projectId: req.project._id,
+        },
+      });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -39,8 +39,9 @@ export class TaskController {
 
   static getProjectTasks = async (req: Request, res: Response) => {
     try {
-      const tasks = await Task.find({ project: req.project._id })
-      .populate("project")
+      const tasks = await Task.find({ project: req.project._id }).populate(
+        "project",
+      );
       res.json(tasks);
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
@@ -60,8 +61,9 @@ export class TaskController {
           populate: [
             { path: "team", select: "_id" },
             { path: "manager", select: "_id" },
-          ]
-        }).select('-assignedTo')
+          ],
+        })
+        .select("-assignedTo");
 
       res.status(200).json(task);
     } catch (error) {
@@ -90,9 +92,9 @@ export class TaskController {
         content: `${req.user!.name} actualizó la tarea "${req.task.name}"`,
       });
 
-      res.send({
+      res.json({
         message: "Tarea Actualizada Correctamente",
-        project: {projectTeam:req.project.team, projectId: req.project._id},
+        project: { projectTeam: req.project.team, projectId: req.project._id },
         taskName: req.task.name,
       });
     } catch (error) {
@@ -120,12 +122,12 @@ export class TaskController {
         content: `${req.user!.name} eliminó la tarea "${req.task.name}"`,
       });
 
-      res.send({
+      res.json({
         message: "Tarea Eliminada Correctamente",
         project: {
-          projectName: req.project.projectName, 
-          projectTeam: req.project.team, 
-          projectId: req.project._id
+          projectName: req.project.projectName,
+          projectTeam: req.project.team,
+          projectId: req.project._id,
         },
       });
     } catch (error) {
@@ -157,10 +159,10 @@ export class TaskController {
         content: `${req.user!.name} actualizó el estado de la tarea "${req.task.name}" a "${status}"`,
       });
 
-      res.send({
+      res.json({
         message: "Tarea Actualizada",
-        task: {taskName: req.task.name},
-        user: {userName: req.user?.name, userId: req.user?._id}
+        task: { taskName: req.task.name },
+        user: { userName: req.user?.name, userId: req.user?._id },
       });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
@@ -168,51 +170,53 @@ export class TaskController {
   };
 
   static assignTask = async (req: Request, res: Response) => {
-  try {
-    const { userIds } = req.body;
+    try {
+      const { userIds } = req.body;
 
-    const validTeamIds = [
-      ...req.project.team?.map((id) => id?.toString()),
-      req?.project?.manager?.toString(),
-    ];
+      const validTeamIds = [
+        ...req.project.team?.map((id) => id?.toString()),
+        req?.project?.manager?.toString(),
+      ];
 
-    const allValid = userIds.every((id: string) => validTeamIds.includes(id));
+      const allValid = userIds.every((id: string) => validTeamIds.includes(id));
 
-    if (!allValid) {
-      return res
-        .status(400)
-        .json({ error: "Solo puedes asignar colaboradores del proyecto" });
+      if (!allValid) {
+        return res
+          .status(400)
+          .json({ error: "Solo puedes asignar colaboradores del proyecto" });
+      }
+
+      req.task.assignedTo = userIds;
+      await req.task.save();
+
+      const members = [...req.project.team, req.project.manager].filter(
+        Boolean,
+      );
+
+      const assignedTaskMembers = members.filter((member) =>
+        req.task.assignedTo.some((assignedId) =>
+          assignedId.equals(member!._id),
+        ),
+      );
+
+      await notifyChangesToTeam({
+        members: assignedTaskMembers as Array<{ _id: Types.ObjectId }>,
+        triggeredBy: req.user!._id!,
+        projectId: req.project._id!,
+        taskId: req.task._id!,
+        actionType: "TASK_STATUS_UPDATED",
+        content: `${req.user!.name} te asigno la tarea "${req.task.name}"`,
+      });
+
+      res.json({
+        message: "Tarea asignada correctamente",
+        taskName: req.task.name,
+        projectName: req.project.projectName,
+        projectId: req.project._id,
+        userIds: userIds,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Hubo un error" });
     }
-
-    req.task.assignedTo = userIds;
-    await req.task.save();
-
-    const members = [...req.project.team, req.project.manager].filter(
-      Boolean,
-    );
-
-    const assignedTaskMembers = members.filter(member =>
-      req.task.assignedTo.some((assignedId) => assignedId.equals(member!._id))
-    );
-
-    await notifyChangesToTeam({
-      members: assignedTaskMembers as Array<{ _id: Types.ObjectId }>,
-      triggeredBy: req.user!._id!,
-      projectId: req.project._id!,
-      taskId: req.task._id!,
-      actionType: "TASK_STATUS_UPDATED",
-      content: `${req.user!.name} te asigno la tarea "${req.task.name}"`,
-    });
-
-    res.json({
-      message: "Tarea asignada correctamente",
-      taskName: req.task.name,
-      projectName: req.project.projectName,
-      projectId: req.project._id,
-      userIds: userIds,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Hubo un error" });
-  }
-};
+  };
 }

@@ -26,6 +26,9 @@ export class TeamMemberController {
                 path: 'team',
                 select: '_id email name'
             })
+            if(!project){
+                res.status(404).json({error: "No se pudo encontrar el projecto"})
+            }
             res.json(project?.team)
         } catch (error) {
             res.status(500).json({ error: 'Hubo un error' })
@@ -36,21 +39,21 @@ export class TeamMemberController {
         try {
             const { _id } = req.body
 
-            const user = await User.findById(_id).select('_id')
+            const user = await User.findById(_id).select('_id');
             if (!user) {
-                const error = new Error('Usuario No Encontrado')
-                return res.status(404).json({ error: error.message })
+                const error = new Error('Usuario No Encontrado');
+                return res.status(404).json({ error: error.message });
             }
 
             if (req.project.team.some(team => team?.toString() === user._id.toString())) {
-                const error = new Error('El usuario ya existe en el proyecto')
-                return res.status(409).json({ error: error.message })
+                const error = new Error('El usuario ya existe en el proyecto');
+                return res.status(409).json({ error: error.message });
             }
 
-            req.project.team.push(user._id)
-            await req.project.save()
+            req.project.team.push(user._id);
+            await req.project.save();
 
-            const members = [{ _id: _id }]
+            const members = [{ _id: _id }];
 
             await notifyChangesToTeam({
                 members: members as Array<{ _id: Types.ObjectId }>,

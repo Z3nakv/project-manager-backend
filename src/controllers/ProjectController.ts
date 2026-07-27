@@ -14,7 +14,7 @@ export class ProjectController {
     const body = req.body;
     try {
       await createProject(body, userId);
-      res.status(201).send("Proyecto creado correctamente");
+      res.status(201).json({message: "Proyecto creado correctamente"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error al crear el proyecto" });
     }
@@ -89,7 +89,7 @@ export class ProjectController {
         actionType: "PROJECT_UPDATED",
         content: `${req.user!.name} actualizó el proyecto "${req.project.projectName}"`,
       });
-      res.send("Proyecto Actualizado");
+      res.json({message: "Proyecto Actualizado"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error al actualizar el proyecto" });
     }
@@ -107,7 +107,7 @@ export class ProjectController {
         actionType: "PROJECT_DELETED",
         content: `${req.user!.name} eliminó el proyecto "${req.project.projectName}"`,
       });
-      res.send("Proyecto Eliminado");
+      res.json({message: "Proyecto Eliminado"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error al eliminar el proyecto" });
     }
