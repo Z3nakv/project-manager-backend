@@ -22,7 +22,7 @@ export class AttachmentController {
         size: req.file.size,
       });
       if (!attachment.publicId) {
-        return res.status(400).send("Parece que hubo un problema");
+        return res.status(400).json({error: "Parece que hubo un problema"});
       }
       res.status(200).json(attachment);
     } catch (error) {

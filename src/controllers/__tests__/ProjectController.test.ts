@@ -1,4 +1,3 @@
-// src/controllers/__tests__/ProjectController.test.ts
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 import { ProjectController } from '../ProjectController';
@@ -157,7 +156,9 @@ describe('ProjectController', () => {
       const projectInDb = await Project.findById(project._id);
       expect(projectInDb?.projectName).toBe('Nombre Nuevo');
       expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
-      expect(res.send).toHaveBeenCalledWith('Proyecto Actualizado');
+      expect(res.json).toHaveBeenCalledWith({
+        message: expect.stringContaining("Proyecto Actualizado")
+      });
     });
   });
 
@@ -180,7 +181,9 @@ describe('ProjectController', () => {
       const projectInDb = await Project.findById(project._id);
       expect(projectInDb).toBeNull();
       expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
-      expect(res.send).toHaveBeenCalledWith('Proyecto Eliminado');
+      expect(res.json).toHaveBeenCalledWith({
+        message: expect.stringContaining("Proyecto Eliminado")
+      });
     });
   });
 });

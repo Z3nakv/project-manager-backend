@@ -69,8 +69,10 @@ describe("AuthController", () => {
       expect(tokenInDb).not.toBeNull();
 
       expect(AuthEmail.sendConfirmationEmail).toHaveBeenCalledTimes(1);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("Cuenta creada"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message : expect.stringContaining("Cuenta creada!, Revisa tu email para confirmarla")
+        }),
       );
     });
 
@@ -127,8 +129,9 @@ describe("AuthController", () => {
       const tokenStillExists = await Token.findById(token._id);
       expect(tokenStillExists).toBeNull(); // el token debe borrarse tras usarse
 
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("confirmada correctamente"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("confirmada correctamente")}),
       );
     });
 
@@ -178,7 +181,7 @@ describe("AuthController", () => {
       await AuthController.login(req, res);
 
       expect(res.status).not.toHaveBeenCalled();
-      expect(res.send).toHaveBeenCalledWith(expect.any(String));
+      expect(res.json).toHaveBeenCalledWith(expect.any(String));
     });
 
     it("debe retornar 404 si el usuario no existe", async () => {
@@ -256,8 +259,10 @@ describe("AuthController", () => {
       const tokenInDb = await Token.findOne({ user: user._id });
       expect(tokenInDb).not.toBeNull();
       expect(AuthEmail.sendConfirmationEmail).toHaveBeenCalledTimes(1);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("nuevo token"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("Se envio un nuevo token, Revisa tu email para confirmarla")
+        }),
       );
     });
 
@@ -307,8 +312,10 @@ describe("AuthController", () => {
       const tokenInDb = await Token.findOne({ user: user._id });
       expect(tokenInDb).not.toBeNull();
       expect(AuthEmail.sendPasswordResetToken).toHaveBeenCalledTimes(1);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("instrucciones"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("Revisa tu email para instrucciones")
+        }),
       );
     });
 
@@ -337,8 +344,8 @@ describe("AuthController", () => {
 
       await AuthController.validateToken(req, res);
 
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("Token valido"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({message: "Token valido, Define tu nuevo password"}),
       );
       expect(res.status).not.toHaveBeenCalled();
     });
@@ -379,8 +386,10 @@ describe("AuthController", () => {
       const tokenStillExists = await Token.findById(token._id);
       expect(tokenStillExists).toBeNull(); // se borró tras usarse
 
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("modifico correctamente"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("El password se modifico correctamente")
+        }),
       );
     });
 
@@ -432,8 +441,10 @@ describe("AuthController", () => {
       const updatedUser = await User.findById(user._id);
       expect(updatedUser?.name).toBe("Nombre Nuevo");
       expect(updatedUser?.email).toBe("nuevo@test.com");
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("actualizado correctamente"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("Perfil actualizado correctamente")
+        }),
       );
     });
 
@@ -511,8 +522,10 @@ describe("AuthController", () => {
 
       const updatedUser = await User.findById(user._id);
       expect(updatedUser?.password).not.toBe(oldHashed);
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("modifico correctamente"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("El password se modifico correctamente")
+        }),
       );
     });
 
@@ -558,8 +571,10 @@ describe("AuthController", () => {
 
       await AuthController.checkPassword(req, res);
 
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining("Password Correcto"),
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("Password Correcto")
+        }),
       );
     });
 
