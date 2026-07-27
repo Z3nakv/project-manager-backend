@@ -160,7 +160,7 @@ export class TaskController {
       res.send({
         message: "Tarea Actualizada",
         task: {taskName: req.task.name},
-        userId: {userName: req.user?.name, userId: req.user?._id}
+        user: {userName: req.user?.name, userId: req.user?._id}
       });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });

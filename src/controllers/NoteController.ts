@@ -46,7 +46,7 @@ export class NoteController {
           });
         });
 
-      res.send("Nota Creada Correctamente");
+      res.send({message: "Nota Creada Correctamente"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -113,7 +113,7 @@ export class NoteController {
           });
         });
 
-      res.send("Nota Eliminada");
+      res.json({message: "Nota Eliminada"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -135,7 +135,7 @@ export class NoteController {
       note.completed = !note.completed;
       await note.save();
 
-      res.status(200).send("Estado de nota actualizado!");
+      res.status(200).json({message: "Estado de nota actualizado!"});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }

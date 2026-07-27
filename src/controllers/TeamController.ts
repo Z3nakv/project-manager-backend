@@ -61,7 +61,7 @@ export class TeamMemberController {
                 content: `${req.user!.name} te agrego al proyecto "${req.project.projectName}"`,
             });
 
-            res.send('Usuario agregado correctamente')
+            res.json({message: 'Usuario agregado correctamente'});
         } catch (error) {
             res.status(500).json({ error: 'Hubo un error' })
         }
