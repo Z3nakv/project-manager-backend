@@ -42,6 +42,10 @@ export const getProjectById = async (projectId: string) => {
             .populate("team")
 }
 
+export const getEditProjectById = async (projectId: string) => {
+  return await Project.findById(projectId).populate({path:"team", select: "_id"}); 
+}
+
 export const createProject = async (body:{projectName:string, clientName:string, description:string}, userId:Types.ObjectId) => {
   const project = await Project.create(body);
       project.manager = userId;

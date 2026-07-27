@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import Project from "../models/ProjectModel";
 import { Types } from "mongoose";
 import { notifyChangesToTeam } from "../services/notificationService";
-import { createProject, getProjectById, updateProject } from "../services/projectService";
+import { createProject, getEditProjectById, getProjectById, updateProject } from "../services/projectService";
 
 export class ProjectController {
   static createProject = async (req: Request, res: Response) => {
@@ -52,6 +52,25 @@ export class ProjectController {
       res.status(500).json({ error: "Hubo un error al obtener el proyecto" });
     }
   };
+
+  static getEditProjectById = async (req: Request, res: Response) => {
+    const projectId = req.params.projectId as string;
+    try {
+      const project = await getEditProjectById(projectId);
+       if (!project) {
+        const error = new Error("Proyecto no encontrado");
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(200).json({
+          projectName: project.projectName,
+          clientName: project.clientName,
+          description: project.description,
+          team: project.team
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Hubo un error al obtener el proyecto" });
+    }
+  }
 
   static updateProject = async (req: Request, res: Response) => {
     const project = req.project;

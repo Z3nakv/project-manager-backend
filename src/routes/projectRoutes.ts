@@ -23,6 +23,11 @@ router.get('/:projectId',
     handleInputErrors,
     ProjectController.getProjectById);
 
+router.get('/:projectId/edit',
+    param('projectId').isMongoId().withMessage('Id del proyecto no es valido'),
+    handleInputErrors,
+    ProjectController.getEditProjectById);
+
 router.post('/create-project', 
     body('projectName').notEmpty().withMessage('El nombre del proyecto es necesario'),
     body('clientName').notEmpty().withMessage('El nombre del cliente es necesario'),

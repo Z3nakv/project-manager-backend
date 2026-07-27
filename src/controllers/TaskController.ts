@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Task from "../models/TaskModel";
 import { notifyChangesToTeam } from "../services/notificationService";
 import { Types } from "mongoose";
+import User from "../models/UserModel";
 
 export class TaskController {
   static createTask = async (req: Request, res: Response) => {
@@ -24,7 +25,13 @@ export class TaskController {
         content: `${req.user!.name} creó la tarea "${task.name}"`,
       });
 
-      res.json({ message: "Tarea creada correctamente", project: req.project });
+      res.json({ 
+        message: "Tarea creada correctamente", 
+        project: {
+          projectName: req.project.projectName, 
+          projectTeam: req.project.team, 
+          projectId: req.project._id
+        }});
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
     }
@@ -85,8 +92,8 @@ export class TaskController {
 
       res.send({
         message: "Tarea Actualizada Correctamente",
-        project: req.project,
-        task: req.task,
+        project: {projectTeam:req.project.team, projectId: req.project._id},
+        taskName: req.task.name,
       });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
@@ -115,7 +122,11 @@ export class TaskController {
 
       res.send({
         message: "Tarea Eliminada Correctamente",
-        project: req.project,
+        project: {
+          projectName: req.project.projectName, 
+          projectTeam: req.project.team, 
+          projectId: req.project._id
+        },
       });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
@@ -148,8 +159,8 @@ export class TaskController {
 
       res.send({
         message: "Tarea Actualizada",
-        project: req.project,
-        task: req.task,
+        task: {taskName: req.task.name},
+        userId: {userName: req.user?.name, userId: req.user?._id}
       });
     } catch (error) {
       res.status(500).json({ error: "Hubo un error" });
