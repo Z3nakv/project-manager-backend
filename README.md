@@ -25,23 +25,44 @@ API REST para la gestión de proyectos tipo Trello. Responsable de la autenticac
 | Linter                 | ESLint ^10.8.0 + typescript-eslint    | ^8.65.0      |
 ---
 ## Arquitectura del proyecto
+
+```text
 backend/
 ├── src/
-│   ├── config/           # Conexiones externas: MongoDB, Cloudinary, Gemini, nodemailer
-│   ├── controllers/      # Manejadores de petición (clases con métodos estáticos)
-│   ├── routes/           # Definición de rutas Express + validación con express-validator
-│   ├── middleware/        # Pipeline de autenticación, autorización, validación, idempotencia
-│   ├── services/         # Lógica de negocio (servicio de IA, notificaciones, proyectos, tareas)
-│   ├── models/           # Schemas Mongoose (7 modelos)
-│   ├── socket/           # Configuración de Socket.io (eventos y rooms)
-│   ├── emails/           # Plantillas de email (confirmación, reset password)
-│   ├── utils/            # Utilidades: JWT, tokens, bcrypt, Cloudinary upload, multer filter
-│   ├── tests/        # Setup global de testing
-│   ├── server.ts         # Configuración de Express + Socket.io
-│   └── index.ts          # Entry point (listen en puerto 5000)
+│   ├── config/
+│   ├── controllers/
+│   ├── routes/
+│   ├── middleware/
+│   ├── services/
+│   ├── models/
+│   ├── socket/
+│   ├── emails/
+│   ├── utils/
+│   ├── tests/
+│   ├── server.ts
+│   └── index.ts
 ├── vitest.config.ts
 ├── tsconfig.json
 └── package.json
+```
+
+### Responsabilidad de cada carpeta
+
+| Carpeta | Responsabilidad |
+|----------|-----------------|
+| `config/` | Configuración de servicios externos como MongoDB, Cloudinary, Gemini AI y Nodemailer. |
+| `controllers/` | Reciben las peticiones HTTP y coordinan la ejecución de la lógica de negocio. |
+| `routes/` | Definición de endpoints y asociación de middlewares y controladores. |
+| `middleware/` | Autenticación, autorización, validaciones, manejo de errores e idempotencia. |
+| `services/` | Implementación de la lógica de negocio y comunicación con servicios externos. |
+| `models/` | Schemas y modelos de Mongoose utilizados por la aplicación. |
+| `socket/` | Configuración de Socket.io, eventos y gestión de salas (rooms). |
+| `emails/` | Plantillas y utilidades para el envío de correos electrónicos. |
+| `utils/` | Funciones auxiliares como JWT, bcrypt, generación de tokens, subida de archivos y filtros de Multer. |
+| `tests/` | Configuración global y utilidades para las pruebas automatizadas. |
+| `server.ts` | Configuración de Express, middlewares, rutas y Socket.io. |
+| `index.ts` | Punto de entrada de la aplicación e inicio del servidor. |
+
 ### Responsabilidad de cada capa
 | Carpeta        | Responsabilidad                                                                  |
 | -------------- | -------------------------------------------------------------------------------- |
