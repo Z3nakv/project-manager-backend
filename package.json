@@ -6,7 +6,8 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "ISC",
