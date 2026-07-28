@@ -18,6 +18,7 @@ export class AiTasksCreationController {
 
       res.json(suggestions);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error al generar las sugerencias" });
     }
   };

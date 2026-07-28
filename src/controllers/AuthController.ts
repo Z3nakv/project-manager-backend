@@ -5,9 +5,6 @@ import Token from "../models/TokenModel";
 import { generateToken } from "../utils/token";
 import { AuthEmail } from "../emails/authEmail";
 import { generateJWT } from "../utils/jwt";
-import { OAuth2Client } from "google-auth-library";
-
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export class AuthController {
   static createAccount = async (req: Request, res: Response) => {
@@ -40,6 +37,7 @@ export class AuthController {
       await Promise.all([user.save(), token.save()]);
       res.json({message: "Cuenta creada!, Revisa tu email para confirmarla"});
     } catch (error) {
+      console.error(error);
       res.status(500).send("Hubo un error");
     }
   };
@@ -65,6 +63,7 @@ export class AuthController {
 
       res.json({message: "Cuenta confirmada correctamente"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -148,6 +147,7 @@ export class AuthController {
 
       res.json({message: "Se envio un nuevo token, Revisa tu email para confirmarla"});
     } catch (error) {
+      console.error(error);
       res.status(500).send("Hubo un error");
     }
   };
@@ -179,6 +179,7 @@ export class AuthController {
 
       res.json({message: "Revisa tu email para instrucciones"});
     } catch (error) {
+      console.error(error);
       res.status(500).send("Hubo un error");
     }
   };
@@ -196,6 +197,7 @@ export class AuthController {
 
       res.json({message: "Token valido, Define tu nuevo password"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -224,6 +226,7 @@ export class AuthController {
 
       res.json({message: "El password se modifico correctamente"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -251,6 +254,7 @@ export class AuthController {
       await req.user?.save();
       res.json({message: "Perfil actualizado correctamente"});
     } catch (error) {
+      console.error(error);
       res.status(500).send("Hubo un error");
     }
   };
@@ -260,9 +264,11 @@ export class AuthController {
 
     const user = await User.findById(req.user?._id);
 
+    if(!user) return res.status(404).json({error: "No se pudo encontrar al usuario"})
+
     const isPasswordCorrect = await checkPassword(
       current_password,
-      user?.password!,
+      user.password,
     );
 
     if (!isPasswordCorrect) {
@@ -275,6 +281,7 @@ export class AuthController {
       await user!.save();
       res.json({message: "El password se modifico correctamente"});
     } catch (error) {
+      console.error(error);
       res.status(500).send("Hubo un error");
     }
   };
@@ -331,23 +338,21 @@ export class AuthController {
     }
 
       if (!user) {
-        // usuario nuevo vía Google, sin password
         user = await User.create({
           email,
           name,
           authProvider: "google",
           googleId,
-          confirmed: true, // ya viene verificado por Google
+          confirmed: true, 
         });
       }
 
-      const jwtToken = generateJWT({ id: user._id }); // tu misma función de siempre
+      const jwtToken = generateJWT({ id: user._id }); 
 
       res.json({ user, token: jwtToken });
     } catch (error) {
-      res
-        .status(401)
-        .json({ error: "No se pudo verificar el token de Google" });
+      console.error(error);
+      res.status(401).json({ error: "No se pudo verificar el token de Google" });
     }
   };
 }

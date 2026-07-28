@@ -1,7 +1,6 @@
 // src/controllers/__tests__/TaskController.test.ts
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
-import { Types } from 'mongoose';
 import { TaskController } from '../TaskController';
 import Task from '../../models/TaskModel';
 import Project from '../../models/ProjectModel';

@@ -4,10 +4,6 @@ import { Types } from "mongoose";
 import { notifyChangesToTeam } from "../services/notificationService";
 import { io } from "../server";
 
-type NoteParams = {
-  noteId: Types.ObjectId;
-};
-
 export class NoteController {
   static createNote = async (req: Request, res: Response) => {
     const { content: bodyContent } = req.body;
@@ -26,6 +22,8 @@ export class NoteController {
       const members = [...req.project.team, req.project.manager].filter(
         Boolean,
       );
+      if(members.length < 1) return res.status(404).json({error: "Members not found"})
+
       const content = `${req.user!.name} creo una nueva nota en la tarea "${req.task.name}"`;
 
       await notifyChangesToTeam({
@@ -40,7 +38,7 @@ export class NoteController {
       members
         .filter((member) => member?._id.toString() !== req.user?._id.toString())
         .forEach((member) => {
-          io.to(member?._id.toString()!).emit("note_added", {
+          io.to(member!._id.toString()).emit("note_added", {
             message: content,
             projectId: req.project._id,
           });
@@ -48,6 +46,7 @@ export class NoteController {
 
       res.send({message: "Nota Creada Correctamente"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -59,6 +58,7 @@ export class NoteController {
       );
       res.json(notes);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -73,7 +73,6 @@ export class NoteController {
         return res.status(404).json({ error: error.message });
       }
 
-      // 👇 nuevo: confirmar que la nota pertenece a la tarea de la URL
       if (note.task.toString() !== req.task._id.toString()) {
         const error = new Error("Acción no válida");
         return res.status(400).json({ error: error.message });
@@ -107,7 +106,7 @@ export class NoteController {
       members
         .filter((member) => member?._id.toString() !== req.user?._id.toString())
         .forEach((member) => {
-          io.to(member?._id.toString()!).emit("note_deleted", {
+          io.to(member!._id.toString()).emit("note_deleted", {
             message: content,
             projectId: req.project._id,
           });
@@ -115,6 +114,7 @@ export class NoteController {
 
       res.json({message: "Nota Eliminada"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -137,6 +137,7 @@ export class NoteController {
 
       res.status(200).json({message: "Estado de nota actualizado!"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };

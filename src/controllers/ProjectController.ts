@@ -16,6 +16,7 @@ export class ProjectController {
       await createProject(body, userId);
       res.status(201).json({message: "Proyecto creado correctamente"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error al crear el proyecto" });
     }
   };
@@ -33,6 +34,7 @@ export class ProjectController {
         });
       res.status(200).json(projects);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error al obtener los proyectos" });
     }
   };
@@ -49,6 +51,7 @@ export class ProjectController {
 
       res.status(200).json(project);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error al obtener el proyecto" });
     }
   };
@@ -68,6 +71,7 @@ export class ProjectController {
           team: project.team
       });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error al obtener el proyecto" });
     }
   }
@@ -91,6 +95,7 @@ export class ProjectController {
       });
       res.json({message: "Proyecto Actualizado"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error al actualizar el proyecto" });
     }
   };
@@ -109,6 +114,7 @@ export class ProjectController {
       });
       res.json({message: "Proyecto Eliminado"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error al eliminar el proyecto" });
     }
   };

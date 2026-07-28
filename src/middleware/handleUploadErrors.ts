@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import multer from "multer";
 
 export const handleUploadErrors = (
-  err: any,
+  err: Error,
   req: Request,
   res: Response,
   next: NextFunction
@@ -15,7 +15,6 @@ export const handleUploadErrors = (
   }
 
   if (err) {
-    // Este es el error que lanzas tú mismo en imageFilter
     return res.status(400).json({ error: err.message });
   }
 

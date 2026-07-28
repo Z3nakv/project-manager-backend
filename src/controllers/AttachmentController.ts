@@ -26,6 +26,7 @@ export class AttachmentController {
       }
       res.status(200).json(attachment);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -43,6 +44,7 @@ export class AttachmentController {
 
       res.status(200).json(taskCardAttachments);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -72,6 +74,7 @@ export class AttachmentController {
       }
       res.status(200).json({message:"Attachment eliminado correctamente"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };

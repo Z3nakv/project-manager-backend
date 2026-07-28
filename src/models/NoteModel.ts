@@ -4,7 +4,7 @@ export interface INote extends Document {
     content: string
     createdBy: Types.ObjectId
     task: Types.ObjectId
-    completed: Boolean
+    completed: boolean
 }
 
 const NoteSchema : Schema = new Schema({

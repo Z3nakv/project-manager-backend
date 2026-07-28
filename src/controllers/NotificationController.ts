@@ -35,6 +35,7 @@ export class NotificationController {
       await notification.save();
       res.json({message: "Notificación leída"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -44,6 +45,7 @@ export class NotificationController {
       await Notification.deleteMany({ user: req.user?._id });
       res.json({message: "Notificaciones eliminadas"});
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };

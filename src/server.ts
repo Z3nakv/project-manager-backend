@@ -13,7 +13,7 @@ import aiRoutes from './routes/aiRoutes';
 
 configDotenv();
 
-connectDB();
+await connectDB();
 
 const server = express();
 

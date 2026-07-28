@@ -16,6 +16,7 @@ export class TeamMemberController {
             }
             res.json(user)
         } catch (error) {
+            console.error(error);
             res.status(500).json({ error: 'Hubo un error' })
         }
     }
@@ -31,6 +32,7 @@ export class TeamMemberController {
             }
             res.json(project?.team)
         } catch (error) {
+            console.error(error);
             res.status(500).json({ error: 'Hubo un error' })
         }
     }
@@ -66,6 +68,7 @@ export class TeamMemberController {
 
             res.json({message: 'Usuario agregado correctamente'});
         } catch (error) {
+            console.error(error);
             res.status(500).json({ error: 'Hubo un error' })
         }
     }
@@ -95,6 +98,7 @@ export class TeamMemberController {
 
             res.json({ message: 'Usuario eliminado correctamente', manager: req.user?.name, colaborador: _id })
         } catch (error) {
+            console.error(error);
             res.status(500).json({ error: 'Hubo un error' })
         }
     }

@@ -18,7 +18,7 @@ import {
 } from "../../__tests__/setup/db";
 import { AuthEmail } from "../../emails/authEmail";
 import { hashPassword } from "../../utils/auth";
-// Mockeamos el envío de emails — no queremos disparar emails reales en cada test
+
 vi.mock("../../emails/authEmail", () => ({
   AuthEmail: {
     sendConfirmationEmail: vi.fn().mockResolvedValue(undefined),
@@ -449,12 +449,6 @@ describe("AuthController", () => {
     });
 
     it("debe retornar 409 si el email ya lo usa otro usuario", async () => {
-      const otroUsuario = await User.create({
-        name: "Otro",
-        email: "ocupado@test.com",
-        password: "hash-cualquiera",
-        confirmed: true,
-      });
       const user = await User.create({
         name: "Mi Usuario",
         email: "mio@test.com",

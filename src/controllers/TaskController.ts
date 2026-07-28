@@ -33,6 +33,7 @@ export class TaskController {
         },
       });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -44,6 +45,7 @@ export class TaskController {
       );
       res.json(tasks);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -67,6 +69,7 @@ export class TaskController {
 
       res.status(200).json(task);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -98,6 +101,7 @@ export class TaskController {
         taskName: req.task.name,
       });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -131,6 +135,7 @@ export class TaskController {
         },
       });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -140,7 +145,7 @@ export class TaskController {
       const { status } = req.body;
       req.task.status = status;
       const data = {
-        user: req.user?._id!,
+        user: req.user!._id,
         status,
       };
       req.task.completedBy.push(data);
@@ -165,6 +170,7 @@ export class TaskController {
         user: { userName: req.user?.name, userId: req.user?._id },
       });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };
@@ -174,8 +180,8 @@ export class TaskController {
       const { userIds } = req.body;
 
       const validTeamIds = [
-        ...req.project.team?.map((id) => id?.toString()),
-        req?.project?.manager?.toString(),
+        ...req.project.team.map((id) => id?.toString()),
+        req.project.manager?.toString(),
       ];
 
       const allValid = userIds.every((id: string) => validTeamIds.includes(id));
@@ -216,6 +222,7 @@ export class TaskController {
         userIds: userIds,
       });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Hubo un error" });
     }
   };

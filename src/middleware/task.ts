@@ -20,6 +20,7 @@ export async function taskExists( req: Request, res: Response, next: NextFunctio
         req.task = task
         next()
     } catch (error) {
+        console.error(error);
         res.status(500).json({error: 'Hubo un error'})
     }
 }
@@ -40,6 +41,7 @@ export function taskBelongsToProject(req: Request, res: Response, next: NextFunc
             }
             next();
         } catch (error) {
+            console.error(error);
             res.status(500).json({ error: 'Hubo un error' });
         }
 }
