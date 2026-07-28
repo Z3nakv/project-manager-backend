@@ -1,5 +1,14 @@
 {
   "compilerOptions": {
-    "types": ["vitest/globals"]
-  }
+    "types": ["vitest/globals"],
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "vitest.config.ts"
+  ]
 }
