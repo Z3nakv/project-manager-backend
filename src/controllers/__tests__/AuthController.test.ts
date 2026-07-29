@@ -7,7 +7,7 @@ import {
   afterAll,
   beforeEach,
 } from "vitest";
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { AuthController } from "../AuthController";
 import User from "../../models/UserModel";
 import Token from "../../models/TokenModel";
@@ -18,6 +18,7 @@ import {
 } from "../../__tests__/setup/db";
 import { AuthEmail } from "../../emails/authEmail";
 import { hashPassword } from "../../utils/auth";
+import { AppError } from "../../utils/errors";
 // Mockeamos el envío de emails — no queremos disparar emails reales en cada test
 vi.mock("../../emails/authEmail", () => ({
   AuthEmail: {
@@ -32,6 +33,14 @@ function mockRes() {
     json: vi.fn(),
     send: vi.fn(),
   } as unknown as Response;
+}
+
+function getNextSpy() {
+  return vi.fn() as unknown as NextFunction;
+}
+
+function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
+  return next.mock.calls[0][0] as AppError;
 }
 
 describe("AuthController", () => {
@@ -71,9 +80,10 @@ describe("AuthController", () => {
       expect(AuthEmail.sendConfirmationEmail).toHaveBeenCalledTimes(1);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          message : expect.stringContaining("Cuenta creada!, Revisa tu email para confirmarla")
+          message : expect.stringContaining("Cuenta creada! Revisa tu email para confirmarla")
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe rechazar el registro si el email ya existe (409)", async () => {
@@ -91,13 +101,14 @@ describe("AuthController", () => {
         },
       } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.createAccount(req, res);
+      await AuthController.createAccount(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(409);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "El usuario ya esta registrado!",
-      });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(409);
+      expect(error.message).toBe("El usuario ya esta registrado!");
 
       // Confirmamos que NO se creó un segundo usuario
       const count = await User.countDocuments({ email: "duplicado@test.com" });
@@ -120,8 +131,9 @@ describe("AuthController", () => {
 
       const req = { body: { token: token.token } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.confirmAccount(req, res);
+      await AuthController.confirmAccount(req, res, next);
 
       const updatedUser = await User.findById(user._id);
       expect(updatedUser?.confirmed).toBe(true);
@@ -133,16 +145,19 @@ describe("AuthController", () => {
         expect.objectContaining({
           message: expect.stringContaining("confirmada correctamente")}),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 404 si el token no existe", async () => {
       const req = { body: { token: "token-inexistente" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.confirmAccount(req, res);
+      await AuthController.confirmAccount(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: "Token no valido" });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
 
     it("debe retornar 404 si el usuario asociado al token ya no existe (bug corregido)", async () => {
@@ -155,11 +170,13 @@ describe("AuthController", () => {
 
       const req = { body: { token: token.token } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.confirmAccount(req, res);
+      await AuthController.confirmAccount(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      // Este es el caso que corregimos — antes esto respondía 200 falsamente
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -177,11 +194,12 @@ describe("AuthController", () => {
         body: { email: "confirmado@test.com", password: "miPassword123" },
       } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.login(req, res);
+      await AuthController.login(req, res, next);
 
-      expect(res.status).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(expect.any(String));
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 404 si el usuario no existe", async () => {
@@ -189,11 +207,13 @@ describe("AuthController", () => {
         body: { email: "noexiste@test.com", password: "cualquiera" },
       } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.login(req, res);
+      await AuthController.login(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: "Usuario no encontrado" });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
 
     it("debe retornar 401 y reenviar email si el usuario no está confirmado", async () => {
@@ -209,10 +229,13 @@ describe("AuthController", () => {
         body: { email: "sinconfirmar@test.com", password: "miPassword123" },
       } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.login(req, res);
+      await AuthController.login(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(401);
       expect(AuthEmail.sendConfirmationEmail).toHaveBeenCalledTimes(1);
 
       // Confirmamos que además se creó un nuevo token en la BD
@@ -234,11 +257,13 @@ describe("AuthController", () => {
         body: { email: "test@test.com", password: "passwordIncorrecto" },
       } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.login(req, res);
+      await AuthController.login(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: "Password incorrecto" });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(401);
     });
   });
 
@@ -253,8 +278,9 @@ describe("AuthController", () => {
 
       const req = { body: { email: "pendiente2@test.com" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.requestConfirmationCode(req, res);
+      await AuthController.requestConfirmationCode(req, res, next);
 
       const tokenInDb = await Token.findOne({ user: user._id });
       expect(tokenInDb).not.toBeNull();
@@ -264,15 +290,19 @@ describe("AuthController", () => {
           message: expect.stringContaining("Se envio un nuevo token, Revisa tu email para confirmarla")
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 404 si el usuario no existe", async () => {
       const req = { body: { email: "noexiste2@test.com" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.requestConfirmationCode(req, res);
+      await AuthController.requestConfirmationCode(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
 
     it("debe retornar 409 si el usuario ya está confirmado", async () => {
@@ -285,13 +315,13 @@ describe("AuthController", () => {
 
       const req = { body: { email: "yaconfirmado@test.com" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.requestConfirmationCode(req, res);
+      await AuthController.requestConfirmationCode(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(409);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "El usuario ya esta confirmado!",
-      });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(409);
     });
   });
 
@@ -306,8 +336,9 @@ describe("AuthController", () => {
 
       const req = { body: { email: "olvido@test.com" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.forgotPassword(req, res);
+      await AuthController.forgotPassword(req, res, next);
 
       const tokenInDb = await Token.findOne({ user: user._id });
       expect(tokenInDb).not.toBeNull();
@@ -317,15 +348,19 @@ describe("AuthController", () => {
           message: expect.stringContaining("Revisa tu email para instrucciones")
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 404 si el usuario no existe", async () => {
       const req = { body: { email: "noexiste3@test.com" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.forgotPassword(req, res);
+      await AuthController.forgotPassword(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -341,22 +376,26 @@ describe("AuthController", () => {
 
       const req = { body: { token: token.token } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.validateToken(req, res);
+      await AuthController.validateToken(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({message: "Token valido, Define tu nuevo password"}),
       );
-      expect(res.status).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 404 si el token no existe", async () => {
       const req = { body: { token: "token-fantasma" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.validateToken(req, res);
+      await AuthController.validateToken(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -376,8 +415,9 @@ describe("AuthController", () => {
         body: { password: "passwordNuevo123" },
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.updatePasswordWithToken(req, res);
+      await AuthController.updatePasswordWithToken(req, res, next);
 
       const updatedUser = await User.findById(user._id);
       expect(updatedUser?.password).not.toBe(oldHashed); // cambió el hash
@@ -391,6 +431,7 @@ describe("AuthController", () => {
           message: expect.stringContaining("El password se modifico correctamente")
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 404 si el token no existe", async () => {
@@ -399,10 +440,13 @@ describe("AuthController", () => {
         body: { password: "nuevoPassword" },
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.updatePasswordWithToken(req, res);
+      await AuthController.updatePasswordWithToken(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
 
     it("debe retornar 404 si el usuario asociado al token ya no existe (bug corregido)", async () => {
@@ -414,10 +458,13 @@ describe("AuthController", () => {
         body: { password: "nuevoPassword" },
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.updatePasswordWithToken(req, res);
+      await AuthController.updatePasswordWithToken(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -435,8 +482,9 @@ describe("AuthController", () => {
         user, // 👈 documento real de Mongoose, simulando lo que pondría el middleware
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.updateProfile(req, res);
+      await AuthController.updateProfile(req, res, next);
 
       const updatedUser = await User.findById(user._id);
       expect(updatedUser?.name).toBe("Nombre Nuevo");
@@ -446,6 +494,7 @@ describe("AuthController", () => {
           message: expect.stringContaining("Perfil actualizado correctamente")
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 409 si el email ya lo usa otro usuario", async () => {
@@ -467,10 +516,13 @@ describe("AuthController", () => {
         user,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.updateProfile(req, res);
+      await AuthController.updateProfile(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(409);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(409);
 
       // Confirmamos que el email del usuario NO cambió
       const userNotChanged = await User.findById(user._id);
@@ -490,12 +542,13 @@ describe("AuthController", () => {
         user,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.updateProfile(req, res);
+      await AuthController.updateProfile(req, res, next);
 
-      expect(res.status).not.toHaveBeenCalled();
       const updatedUser = await User.findById(user._id);
       expect(updatedUser?.name).toBe("Nombre Actualizado");
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
@@ -517,8 +570,9 @@ describe("AuthController", () => {
         user,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.updateCurrentUserPassword(req, res);
+      await AuthController.updateCurrentUserPassword(req, res, next);
 
       const updatedUser = await User.findById(user._id);
       expect(updatedUser?.password).not.toBe(oldHashed);
@@ -527,6 +581,7 @@ describe("AuthController", () => {
           message: expect.stringContaining("El password se modifico correctamente")
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 401 si el password actual es incorrecto", async () => {
@@ -546,10 +601,13 @@ describe("AuthController", () => {
         user,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.updateCurrentUserPassword(req, res);
+      await AuthController.updateCurrentUserPassword(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(401);
     });
   });
 
@@ -568,14 +626,16 @@ describe("AuthController", () => {
         user,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.checkPassword(req, res);
+      await AuthController.checkPassword(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           message: expect.stringContaining("Password Correcto")
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 401 si el password es incorrecto", async () => {
@@ -592,10 +652,13 @@ describe("AuthController", () => {
         user,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.checkPassword(req, res);
+      await AuthController.checkPassword(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(401);
     });
   });
 
@@ -617,8 +680,9 @@ describe("AuthController", () => {
 
       const req = { body: { token: "token-de-google-valido" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.googleAuth(req, res);
+      await AuthController.googleAuth(req, res, next);
 
       const userInDb = await User.findOne({ email: "nuevo-google@test.com" });
       expect(userInDb).not.toBeNull();
@@ -631,6 +695,7 @@ describe("AuthController", () => {
           token: expect.any(String),
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe reutilizar el usuario existente si el email ya está registrado", async () => {
@@ -654,8 +719,9 @@ describe("AuthController", () => {
 
       const req = { body: { token: "token-de-google-valido" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.googleAuth(req, res);
+      await AuthController.googleAuth(req, res, next);
 
       // No debe haberse creado un segundo usuario
       const count = await User.countDocuments({
@@ -667,6 +733,7 @@ describe("AuthController", () => {
           user: expect.objectContaining({ _id: existingUser._id }),
         }),
       );
+      expect(next).not.toHaveBeenCalled();
     });
 
     it("debe retornar 401 si el token de Google es inválido (fetch no ok)", async () => {
@@ -676,13 +743,13 @@ describe("AuthController", () => {
 
       const req = { body: { token: "token-invalido" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.googleAuth(req, res);
+      await AuthController.googleAuth(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Token de Google inválido",
-      });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(401);
     });
 
     it("debe retornar 400 si el email de Google no está verificado", async () => {
@@ -698,31 +765,30 @@ describe("AuthController", () => {
 
       const req = { body: { token: "token-de-google" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.googleAuth(req, res);
+      await AuthController.googleAuth(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Email de Google no verificado",
-      });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(400);
 
       // Confirmamos que NO se creó un usuario
       const userInDb = await User.findOne({ email: "sinverificar@test.com" });
       expect(userInDb).toBeNull();
     });
 
-    it("debe retornar 401 si la llamada a la API de Google lanza una excepción", async () => {
+    it("debe retornar 500 si la llamada a la API de Google lanza una excepción", async () => {
       vi.mocked(global.fetch).mockRejectedValue(new Error("Network error"));
 
       const req = { body: { token: "token-cualquiera" } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.googleAuth(req, res);
+      await AuthController.googleAuth(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "No se pudo verificar el token de Google",
-      });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(Error);
     });
 
     it('debe retornar 409 si el email ya está registrado con authProvider distinto', async () => {
@@ -746,13 +812,13 @@ describe("AuthController", () => {
 
     const req = { body: { token: 'token-de-google' } } as Request;
     const res = mockRes();
+    const next = getNextSpy();
 
-    await AuthController.googleAuth(req, res);
+    await AuthController.googleAuth(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'Este email ya está registrado con otro método. Inicia sesión con tu contraseña.',
-    });
+    const error = getErrorFromNext(next);
+    expect(error).toBeInstanceOf(AppError);
+    expect(error.statusCode).toBe(409);
 
     const userInDb = await User.findOne({ email: 'compartido@test.com' });
     expect(userInDb?.googleId).toBeUndefined();

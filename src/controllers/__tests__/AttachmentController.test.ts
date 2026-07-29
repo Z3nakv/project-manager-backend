@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { AttachmentController } from '../AttachmentController';
 import { Attachment } from '../../models/Attachment';
@@ -10,6 +10,7 @@ import { connectTestDB, closeTestDB, clearTestDB } from '../../__tests__/setup/d
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary';
 import cloudinary from '../../config/cloudinary';
 import { getCloudinaryUrl } from '../../utils/cloudinaryUrl';
+import { AppError } from '../../utils/errors';
 
 vi.mock('../../utils/uploadToCloudinary', () => ({
   uploadToCloudinary: vi.fn(),
@@ -33,6 +34,14 @@ function mockRes() {
     json: vi.fn(),
     send: vi.fn(),
   } as unknown as Response;
+}
+
+function getNextSpy() {
+  return vi.fn() as unknown as NextFunction;
+}
+
+function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
+  return next.mock.calls[0][0] as AppError;
 }
 
 async function setup() {
@@ -83,8 +92,9 @@ describe('AttachmentController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.createAttachment(req, res);
+      await AttachmentController.createAttachment(req, res, next);
 
       expect(uploadToCloudinary).toHaveBeenCalledTimes(1);
 
@@ -102,10 +112,13 @@ describe('AttachmentController', () => {
 
       const req = { file: undefined, task, project, user: manager } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.createAttachment(req, res);
+      await AttachmentController.createAttachment(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(400);
       expect(uploadToCloudinary).not.toHaveBeenCalled();
     });
 
@@ -126,11 +139,11 @@ describe('AttachmentController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.createAttachment(req, res);
+      await AttachmentController.createAttachment(req, res, next);
 
-      // Antes del fix, esto se colgaba sin responder (solo console.log)
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(next).toHaveBeenCalled();
 
       const attachmentInDb = await Attachment.findOne({ filename: 'archivo.png' });
       expect(attachmentInDb).toBeNull();
@@ -152,8 +165,9 @@ describe('AttachmentController', () => {
 
       const req = { task } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.getTaskAttachments(req, res);
+      await AttachmentController.getTaskAttachments(req, res, next);
 
       const returned = (res.json as any).mock.calls[0][0];
       expect(returned).toHaveLength(1);
@@ -166,8 +180,9 @@ describe('AttachmentController', () => {
 
       const req = { task } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.getTaskAttachments(req, res);
+      await AttachmentController.getTaskAttachments(req, res, next);
 
       const returned = (res.json as any).mock.calls[0][0];
       expect(returned).toEqual([]);
@@ -193,8 +208,9 @@ describe('AttachmentController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.deleteTaskAttachment(req, res);
+      await AttachmentController.deleteTaskAttachment(req, res, next);
 
       expect(cloudinary.uploader.destroy).toHaveBeenCalledWith('public-id-borrar');
       const attachmentInDb = await Attachment.findById(attachment._id);
@@ -208,10 +224,13 @@ describe('AttachmentController', () => {
 
       const req = { params: { imageId: fakeId }, task, user: manager } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.deleteTaskAttachment(req, res);
+      await AttachmentController.deleteTaskAttachment(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
       expect(cloudinary.uploader.destroy).not.toHaveBeenCalled();
     });
 
@@ -235,10 +254,13 @@ describe('AttachmentController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.deleteTaskAttachment(req, res);
+      await AttachmentController.deleteTaskAttachment(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(400);
       const stillExists = await Attachment.findById(attachmentDeOtraTask._id);
       expect(stillExists).not.toBeNull();
     });
@@ -262,10 +284,13 @@ describe('AttachmentController', () => {
         user: otroUsuario,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AttachmentController.deleteTaskAttachment(req, res);
+      await AttachmentController.deleteTaskAttachment(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(403);
       const stillExists = await Attachment.findById(attachment._id);
       expect(stillExists).not.toBeNull();
     });

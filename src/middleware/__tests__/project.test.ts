@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { hasProjectAccess } from '../project';
 import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';
 import { connectTestDB, closeTestDB, clearTestDB } from '../../__tests__/setup/db';
+import { UnauthorizedError } from '../../utils/errors';
 
 function mockRes() {
   return {
@@ -88,8 +89,9 @@ describe('hasProjectAccess middleware', () => {
 
     await hasProjectAccess(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ error: 'No tienes acceso a este proyecto' });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    const error = next.mock.calls[0][0];
+    expect(error).toBeInstanceOf(UnauthorizedError);
+    expect(error.statusCode).toBe(403);
   });
 });

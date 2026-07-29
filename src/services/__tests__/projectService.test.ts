@@ -6,6 +6,7 @@ import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';
 import Task from '../../models/TaskModel';
 import { connectTestDB, closeTestDB, clearTestDB } from '../../__tests__/setup/db';
+import { NotFoundError } from '../../utils/errors';
 
 describe('projectService', () => {
   beforeAll(async () => {
@@ -83,15 +84,14 @@ describe('projectService', () => {
       expect((result?.tasks[0] as any).name).toBe('Tarea');
     });
 
-    it('debe retornar null si el proyecto no existe', async () => {
+    it('debe lanzar NotFoundError si el proyecto no existe', async () => {
       const fakeId = new Types.ObjectId().toString();
-      const result = await getProjectById(fakeId);
-      expect(result).toBeNull();
+      await expect(getProjectById(fakeId)).rejects.toThrow(NotFoundError);
     });
   });
 
   describe('updateProject', () => {
-    it('debe actualizar los campos del proyecto (sin guardar aún)', async () => {
+    it('debe actualizar los campos del proyecto y guardarlo', async () => {
       const manager = await User.create({ name: 'Manager', email: 'm4@test.com', password: 'hash' });
       const project = await Project.create({
         projectName: 'Nombre Viejo',
@@ -100,26 +100,22 @@ describe('projectService', () => {
         manager: manager._id,
       });
 
-      await updateProject({
-        project: project as any,
-        body: {
+      await updateProject(
+        project as any,
+        {
           projectName: 'Nombre Nuevo',
           clientName: 'Cliente Nuevo',
           description: 'Desc Nueva',
         },
-      });
+        manager,
+      );
 
       // Verificamos que el documento en memoria cambió...
       expect(project.projectName).toBe('Nombre Nuevo');
 
-      // ...pero que TODAVÍA NO se persistió, porque updateProject no hace save()
-      const projectInDbSinGuardar = await Project.findById(project._id);
-      expect(projectInDbSinGuardar?.projectName).toBe('Nombre Viejo');
-
-      // Ahora sí lo guardamos (como hace el controller)
-      await project.save();
-      const projectInDbGuardado = await Project.findById(project._id);
-      expect(projectInDbGuardado?.projectName).toBe('Nombre Nuevo');
+      // ...y que YA SE persistió porque updateProject ahora hace save()
+      const projectInDb = await Project.findById(project._id);
+      expect(projectInDb?.projectName).toBe('Nombre Nuevo');
     });
   });
 });

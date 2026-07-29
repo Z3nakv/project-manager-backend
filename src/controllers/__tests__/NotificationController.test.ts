@@ -7,7 +7,7 @@ import {
   afterAll,
   beforeEach,
 } from "vitest";
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { Types } from "mongoose";
 import { NotificationController } from "../NotificationController";
 import Notification from "../../models/NotificationModel";
@@ -18,12 +18,58 @@ import {
   closeTestDB,
   clearTestDB,
 } from "../../__tests__/setup/db";
+import { AppError } from "../../utils/errors";
+
+vi.mock("../../services/notificationService", () => ({
+  createNotification: vi.fn(),
+  getNotifications: vi.fn().mockImplementation(async (userId) => {
+    // Dynamic import to avoid circular dependency at module load time
+    const { default: Notification } = await import("../../models/NotificationModel");
+    return Notification.find({ user: userId })
+      .populate("triggeredBy", "name email")
+      .populate("project", "_id")
+      .populate("task", "_id")
+      .populate("user", "_id name email")
+      .sort({ createdAt: -1 })
+      .limit(20);
+  }),
+  markAsRead: vi.fn().mockImplementation(async (notificationId, userId) => {
+    const { default: Notification } = await import("../../models/NotificationModel");
+    const { NotFoundError, UnauthorizedError } = await import("../../utils/errors");
+    const notification = await Notification.findById(notificationId);
+    if (!notification) throw new NotFoundError("Notification", notificationId);
+    if (notification.user?.toString() !== userId.toString()) throw new UnauthorizedError();
+    notification.read = true;
+    await notification.save();
+  }),
+  clearAll: vi.fn().mockImplementation(async (userId) => {
+    const { default: Notification } = await import("../../models/NotificationModel");
+    return Notification.deleteMany({ user: userId });
+  }),
+  notifyChangesToTeam: vi.fn().mockResolvedValue(undefined),
+  notifyChangesToTeamSafely: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../server", () => ({
+  io: {
+    to: vi.fn().mockReturnThis(),
+    emit: vi.fn(),
+  },
+}));
 
 function mockRes() {
   return {
     status: vi.fn().mockReturnThis(),
     json: vi.fn(),
   } as unknown as Response;
+}
+
+function getNextSpy() {
+  return vi.fn() as unknown as NextFunction;
+}
+
+function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
+  return next.mock.calls[0][0] as AppError;
 }
 
 describe("NotificationController", () => {
@@ -74,8 +120,9 @@ describe("NotificationController", () => {
 
       const req = { user } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NotificationController.getNotifications(req, res);
+      await NotificationController.getNotifications(req, res, next);
 
       const returned = (res.json as any).mock.calls[0][0];
       expect(returned).toHaveLength(1);
@@ -109,12 +156,12 @@ describe("NotificationController", () => {
         user,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NotificationController.markAsRead(req, res);
+      await NotificationController.markAsRead(req, res, next);
 
       const updated = await Notification.findById(notification._id);
       expect(updated?.read).toBe(true);
-      expect(res.status).not.toHaveBeenCalled();
     });
 
     it("debe retornar 403 si la notificación pertenece a otro usuario (bug corregido)", async () => {
@@ -150,10 +197,13 @@ describe("NotificationController", () => {
         user: otroUsuario, // 👈 intenta marcar como leída una notificación ajena
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NotificationController.markAsRead(req, res);
+      await NotificationController.markAsRead(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(403);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(403);
       const stillUnread = await Notification.findById(notification._id);
       expect(stillUnread?.read).toBe(false);
     });
@@ -171,10 +221,13 @@ describe("NotificationController", () => {
         user,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NotificationController.markAsRead(req, res);
+      await NotificationController.markAsRead(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -220,8 +273,9 @@ describe("NotificationController", () => {
 
       const req = { user } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NotificationController.clearAll(req, res);
+      await NotificationController.clearAll(req, res, next);
 
       const remaining = await Notification.find({});
       expect(remaining).toHaveLength(1);

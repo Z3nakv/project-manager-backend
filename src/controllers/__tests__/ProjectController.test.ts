@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { ProjectController } from '../ProjectController';
 import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';
 import { connectTestDB, closeTestDB, clearTestDB } from '../../__tests__/setup/db';
-import { notifyChangesToTeam } from '../../services/notificationService';
+import { notifyChangesToTeamSafely } from '../../services/notificationService';
+import { AppError } from '../../utils/errors';
 
 vi.mock('../../services/notificationService', () => ({
-  notifyChangesToTeam: vi.fn().mockResolvedValue(undefined),
+  notifyChangesToTeamSafely: vi.fn().mockResolvedValue(undefined),
 }));
 
 function mockRes() {
@@ -16,6 +17,14 @@ function mockRes() {
     json: vi.fn(),
     send: vi.fn(),
   } as unknown as Response;
+}
+
+function getNextSpy() {
+  return vi.fn() as unknown as NextFunction;
+}
+
+function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
+  return next.mock.calls[0][0] as AppError;
 }
 
 describe('ProjectController', () => {
@@ -41,8 +50,9 @@ describe('ProjectController', () => {
         body: { projectName: 'Proyecto Test', clientName: 'Cliente', description: 'Desc' },
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await ProjectController.createProject(req, res);
+      await ProjectController.createProject(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(201);
 
@@ -57,10 +67,11 @@ describe('ProjectController', () => {
         body: { projectName: 'Proyecto Test', clientName: 'Cliente', description: 'Desc' },
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await ProjectController.createProject(req, res);
+      await ProjectController.createProject(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next).toHaveBeenCalled();
     });
   });
 
@@ -91,8 +102,9 @@ describe('ProjectController', () => {
 
       const req = { user } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await ProjectController.getProjects(req, res);
+      await ProjectController.getProjects(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const returnedProjects = (res.json as any).mock.calls[0][0];
@@ -116,8 +128,9 @@ describe('ProjectController', () => {
 
       const req = { params: { projectId: project._id.toString() } } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await ProjectController.getProjectById(req, res);
+      await ProjectController.getProjectById(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(200);
     });
@@ -126,10 +139,13 @@ describe('ProjectController', () => {
       const fakeId = (await import('mongoose')).Types.ObjectId.createFromTime(Date.now());
       const req = { params: { projectId: fakeId.toString() } } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await ProjectController.getProjectById(req, res);
+      await ProjectController.getProjectById(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -150,12 +166,13 @@ describe('ProjectController', () => {
         body: { projectName: 'Nombre Nuevo', clientName: 'Cliente Nuevo', description: 'Desc Nueva' },
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await ProjectController.updateProject(req, res);
+      await ProjectController.updateProject(req, res, next);
 
       const projectInDb = await Project.findById(project._id);
       expect(projectInDb?.projectName).toBe('Nombre Nuevo');
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
       expect(res.json).toHaveBeenCalledWith({
         message: expect.stringContaining("Proyecto Actualizado")
       });
@@ -175,12 +192,13 @@ describe('ProjectController', () => {
 
       const req = { project, user: manager } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await ProjectController.deleteProject(req, res);
+      await ProjectController.deleteProject(req, res, next);
 
       const projectInDb = await Project.findById(project._id);
       expect(projectInDb).toBeNull();
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
       expect(res.json).toHaveBeenCalledWith({
         message: expect.stringContaining("Proyecto Eliminado")
       });

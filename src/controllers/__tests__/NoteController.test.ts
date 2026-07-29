@@ -1,6 +1,6 @@
 // src/controllers/__tests__/NoteController.test.ts
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { NoteController } from '../NoteController';
 import { Note } from '../../models/NoteModel';
@@ -8,10 +8,11 @@ import Task from '../../models/TaskModel';
 import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';
 import { connectTestDB, closeTestDB, clearTestDB } from '../../__tests__/setup/db';
-import { notifyChangesToTeam } from '../../services/notificationService';
+import { notifyChangesToTeamSafely } from '../../services/notificationService';
+import { AppError } from '../../utils/errors';
 
 vi.mock('../../services/notificationService', () => ({
-  notifyChangesToTeam: vi.fn().mockResolvedValue(undefined),
+  notifyChangesToTeamSafely: vi.fn().mockResolvedValue(undefined),
 }));
 
 // El controller importa { io } desde ../server — lo mockeamos para no levantar
@@ -29,6 +30,14 @@ function mockRes() {
     json: vi.fn(),
     send: vi.fn(),
   } as unknown as Response;
+}
+
+function getNextSpy() {
+  return vi.fn() as unknown as NextFunction;
+}
+
+function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
+  return next.mock.calls[0][0] as AppError;
 }
 
 async function setup() {
@@ -69,8 +78,9 @@ describe('NoteController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NoteController.createNote(req, res);
+      await NoteController.createNote(req, res, next);
 
       const noteInDb = await Note.findOne({ content: 'Nota de prueba' });
       expect(noteInDb).not.toBeNull();
@@ -79,7 +89,7 @@ describe('NoteController', () => {
       const updatedTask = await Task.findById(task._id);
       expect(updatedTask?.notes.map(n => n.toString())).toContain(noteInDb?._id.toString());
 
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -97,8 +107,9 @@ describe('NoteController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NoteController.deleteTaskNote(req, res);
+      await NoteController.deleteTaskNote(req, res, next);
 
       const noteInDb = await Note.findById(note._id);
       expect(noteInDb).toBeNull();
@@ -118,10 +129,13 @@ describe('NoteController', () => {
         user: otroUsuario, // 👈 no es el creador
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NoteController.deleteTaskNote(req, res);
+      await NoteController.deleteTaskNote(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(403);
       const noteStillExists = await Note.findById(note._id);
       expect(noteStillExists).not.toBeNull();
     });
@@ -141,10 +155,13 @@ describe('NoteController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NoteController.deleteTaskNote(req, res);
+      await NoteController.deleteTaskNote(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(409);
       // La nota de la otra tarea NO debe haberse borrado
       const noteStillExists = await Note.findById(noteDeOtraTask._id);
       expect(noteStillExists).not.toBeNull();
@@ -161,10 +178,13 @@ describe('NoteController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NoteController.deleteTaskNote(req, res);
+      await NoteController.deleteTaskNote(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -175,8 +195,9 @@ describe('NoteController', () => {
 
       const req = { params: { noteId: note._id.toString() } } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NoteController.updateNoteStatus(req, res);
+      await NoteController.updateNoteStatus(req, res, next);
 
       const updatedNote = await Note.findById(note._id);
       expect(updatedNote?.completed).toBe(true);
@@ -187,10 +208,13 @@ describe('NoteController', () => {
       const fakeNoteId = new Types.ObjectId().toString();
       const req = { params: { noteId: fakeNoteId } } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await NoteController.updateNoteStatus(req, res);
+      await NoteController.updateNoteStatus(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 });

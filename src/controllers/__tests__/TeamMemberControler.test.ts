@@ -1,15 +1,16 @@
 // src/controllers/__tests__/TeamMemberController.test.ts
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';
 import { connectTestDB, closeTestDB, clearTestDB } from '../../__tests__/setup/db';
-import { notifyChangesToTeam } from '../../services/notificationService';
+import { notifyChangesToTeamSafely } from '../../services/notificationService';
 import { TeamMemberController } from '../TeamController';
+import { AppError } from '../../utils/errors';
 
 vi.mock('../../services/notificationService', () => ({
-  notifyChangesToTeam: vi.fn().mockResolvedValue(undefined),
+  notifyChangesToTeamSafely: vi.fn().mockResolvedValue(undefined),
 }));
 
 function mockRes() {
@@ -18,6 +19,14 @@ function mockRes() {
     json: vi.fn(),
     send: vi.fn(),
   } as unknown as Response;
+}
+
+function getNextSpy() {
+  return vi.fn() as unknown as NextFunction;
+}
+
+function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
+  return next.mock.calls[0][0] as AppError;
 }
 
 describe('TeamMemberController', () => {
@@ -40,8 +49,9 @@ describe('TeamMemberController', () => {
 
       const req = { body: { email: 'buscado@test.com' } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TeamMemberController.findMemberByEmail(req, res);
+      await TeamMemberController.findMemberByEmail(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ email: 'buscado@test.com' })
@@ -51,10 +61,13 @@ describe('TeamMemberController', () => {
     it('debe retornar 404 si el email no existe', async () => {
       const req = { body: { email: 'noexiste@test.com' } } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TeamMemberController.findMemberByEmail(req, res);
+      await TeamMemberController.findMemberByEmail(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -72,8 +85,9 @@ describe('TeamMemberController', () => {
 
       const req = { project } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TeamMemberController.getProjecTeam(req, res);
+      await TeamMemberController.getProjecTeam(req, res, next);
 
       const returned = (res.json as any).mock.calls[0][0];
       expect(returned).toHaveLength(1);
@@ -99,12 +113,13 @@ describe('TeamMemberController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TeamMemberController.addMemberById(req, res);
+      await TeamMemberController.addMemberById(req, res, next);
 
       const updatedProject = await Project.findById(project._id);
       expect(updatedProject?.team.map(t => t?.toString())).toContain(nuevo._id.toString());
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
     });
 
     it('debe retornar 409 si el usuario ya es miembro del proyecto', async () => {
@@ -124,10 +139,13 @@ describe('TeamMemberController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TeamMemberController.addMemberById(req, res);
+      await TeamMemberController.addMemberById(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(409);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(409);
     });
 
     it('debe retornar 404 si el usuario a agregar no existe', async () => {
@@ -147,10 +165,13 @@ describe('TeamMemberController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TeamMemberController.addMemberById(req, res);
+      await TeamMemberController.addMemberById(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 
@@ -172,15 +193,16 @@ describe('TeamMemberController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TeamMemberController.removeMemberById(req, res);
+      await TeamMemberController.removeMemberById(req, res, next);
 
       const updatedProject = await Project.findById(project._id);
       expect(updatedProject?.team.map(t => t?.toString())).not.toContain(miembro._id.toString());
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
     });
 
-    it('debe retornar 409 si el usuario no es miembro del proyecto', async () => {
+    it('debe retornar 404 si el usuario no es miembro del proyecto', async () => {
       const manager = await User.create({ name: 'Manager', email: 'm6@test.com', password: 'hash' });
       const project = await Project.create({
         projectName: 'Proyecto',
@@ -197,10 +219,13 @@ describe('TeamMemberController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TeamMemberController.removeMemberById(req, res);
+      await TeamMemberController.removeMemberById(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(409);
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(404);
     });
   });
 });

@@ -17,12 +17,12 @@ describe("getTasksByProject", () => {
   });
   it("llama a Task.find con el projectId correcto", async () => {
     const mockTasks = [{ _id: "1", name: "Tarea 1" }];
-    const populateMock = vi.fn().mockResolvedValue(mockTasks)
-    ;(Task.find as any).mockReturnValue({ populate: populateMock });
+    ;(Task.find as any).mockReturnValue(mockTasks);
 
-    const result = await getTasksByProject("proj123");
+    const projectId = new Types.ObjectId("507f1f77bcf86cd799439011");
+    const result = await getTasksByProject(projectId);
 
-    expect(Task.find).toHaveBeenCalledWith({ project: "proj123" });
+    expect(Task.find).toHaveBeenCalledWith({ project: projectId });
     expect(result).toEqual(mockTasks);
   });
 });
@@ -42,21 +42,19 @@ describe('createProject', () => {
 
   it('asigna el manager y guarda el proyecto', async () => {
   const userId = new Types.ObjectId()
+  const body = { projectName: 'Test', clientName: 'client name', description: 'Desc' };
   const mockProject = {
     _id: 'proj1',
     name: 'Test',
-    manager: undefined,
+    manager: userId,
     save: vi.fn().mockResolvedValue(undefined),
   }
 
   vi.mocked(Project.create).mockResolvedValue(mockProject as any)
 
-  const body = { projectName: 'Test', clientName: 'client name', description: 'Desc' };
   const result = await createProject(body, userId)
 
-  expect(Project.create).toHaveBeenCalledWith(body) 
-  expect(mockProject.manager).toBe(userId)
-  expect(mockProject.save).toHaveBeenCalled()
+  expect(Project.create).toHaveBeenCalledWith({ ...body, manager: userId })
   expect(result).toBe(mockProject)
 })
 })

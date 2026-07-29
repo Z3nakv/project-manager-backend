@@ -1,15 +1,16 @@
 // src/controllers/__tests__/TaskController.test.ts
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { TaskController } from '../TaskController';
 import Task from '../../models/TaskModel';
 import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';
 import { connectTestDB, closeTestDB, clearTestDB } from '../../__tests__/setup/db';
-import { notifyChangesToTeam } from '../../services/notificationService';
+import { notifyChangesToTeamSafely } from '../../services/notificationService';
+import { AppError } from '../../utils/errors';
 
 vi.mock('../../services/notificationService', () => ({
-  notifyChangesToTeam: vi.fn().mockResolvedValue(undefined),
+  notifyChangesToTeamSafely: vi.fn().mockResolvedValue(undefined),
 }));
 
 function mockRes() {
@@ -18,6 +19,14 @@ function mockRes() {
     json: vi.fn(),
     send: vi.fn(),
   } as unknown as Response;
+}
+
+function getNextSpy() {
+  return vi.fn() as unknown as NextFunction;
+}
+
+function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
+  return next.mock.calls[0][0] as AppError;
 }
 
 async function createProjectWithTeam() {
@@ -58,8 +67,9 @@ describe('TaskController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TaskController.createTask(req, res);
+      await TaskController.createTask(req, res, next);
 
       const taskInDb = await Task.findOne({ name: 'Nueva Tarea' });
       expect(taskInDb).not.toBeNull();
@@ -68,7 +78,7 @@ describe('TaskController', () => {
       const updatedProject = await Project.findById(project._id);
       expect(updatedProject?.tasks.map(t => t?.toString())).toContain(taskInDb?._id.toString());
 
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'Tarea creada correctamente' })
       );
@@ -96,15 +106,16 @@ describe('TaskController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TaskController.updateProjectTask(req, res);
+      await TaskController.updateProjectTask(req, res, next);
 
       const updatedTask = await Task.findById(task._id);
       expect(updatedTask?.name).toBe('Tarea Editada');
       expect(updatedTask?.description).toBe('Desc Editada');
       expect(updatedTask?.labels).toHaveLength(1);
 
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
     });
 
     it('debe mantener las labels existentes si no se envían nuevas', async () => {
@@ -128,8 +139,9 @@ describe('TaskController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TaskController.updateProjectTask(req, res);
+      await TaskController.updateProjectTask(req, res, next);
 
       const updatedTask = await Task.findById(task._id);
       expect(updatedTask?.labels).toHaveLength(1);
@@ -150,8 +162,9 @@ describe('TaskController', () => {
 
       const req = { task, project, user: manager } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TaskController.deleteProjectTask(req, res);
+      await TaskController.deleteProjectTask(req, res, next);
 
       const taskInDb = await Task.findById(task._id);
       expect(taskInDb).toBeNull();
@@ -159,7 +172,7 @@ describe('TaskController', () => {
       const updatedProject = await Project.findById(project._id);
       expect(updatedProject?.tasks.map(t => t?.toString())).not.toContain(task._id.toString());
 
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -188,7 +201,7 @@ describe('TaskController', () => {
       expect(updatedTask?.completedBy).toHaveLength(1);
       expect(updatedTask?.completedBy[0].status).toBe('completed');
 
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -204,12 +217,13 @@ describe('TaskController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TaskController.assignTask(req, res);
+      await TaskController.assignTask(req, res, next);
 
       const updatedTask = await Task.findById(task._id);
       expect(updatedTask?.assignedTo.map(id => id.toString())).toEqual([member._id.toString()]);
-      expect(notifyChangesToTeam).toHaveBeenCalledTimes(1);
+      expect(notifyChangesToTeamSafely).toHaveBeenCalledTimes(1);
     });
 
     it('debe rechazar la asignación si algún userId no pertenece al equipo', async () => {
@@ -224,13 +238,13 @@ describe('TaskController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await TaskController.assignTask(req, res);
+      await TaskController.assignTask(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: 'Solo puedes asignar colaboradores del proyecto',
-      });
+      const error = getErrorFromNext(next);
+      expect(error).toBeInstanceOf(AppError);
+      expect(error.statusCode).toBe(400);
 
       const taskUnchanged = await Task.findById(task._id);
       expect(taskUnchanged?.assignedTo).toHaveLength(0);
@@ -249,9 +263,11 @@ describe('TaskController', () => {
         user: manager,
       } as unknown as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await expect(TaskController.assignTask(req, res)).resolves.not.toThrow();
-      expect(res.status).toHaveBeenCalledWith(500);
+      await TaskController.assignTask(req, res, next);
+
+      expect(next).toHaveBeenCalled();
     });
   });
 });

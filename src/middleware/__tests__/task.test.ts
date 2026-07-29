@@ -1,11 +1,12 @@
 // src/middleware/__tests__/task.test.ts
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { hasAuthorization } from '../task';
 import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';
 import { connectTestDB, closeTestDB, clearTestDB } from '../../__tests__/setup/db';
+import { UnauthorizedError } from '../../utils/errors';
 
 function mockRes() {
   return {
@@ -57,7 +58,7 @@ describe('hasAuthorization middleware', () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
-  it('debe retornar 400 si el usuario NO es el manager del proyecto', async () => {
+  it('debe retornar 403 si el usuario NO es el manager del proyecto', async () => {
     const manager = await User.create({
       name: 'Manager',
       email: 'manager2@test.com',
@@ -87,9 +88,10 @@ describe('hasAuthorization middleware', () => {
 
     await hasAuthorization(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Accion no valida' });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    const error = next.mock.calls[0][0];
+    expect(error).toBeInstanceOf(UnauthorizedError);
+    expect(error.statusCode).toBe(403);
   });
 
   it('NO debe lanzar una excepción no controlada cuando project.manager es un ObjectId sin popular', async () => {
