@@ -1,19 +1,16 @@
-// src/middleware/__tests__/auth.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../../models/UserModel';
 import { authenticate } from '../auth';
 import { AuthenticationError } from '../../utils/errors';
 
-// 👇 Mockeamos el módulo completo de jsonwebtoken
 vi.mock('jsonwebtoken');
-// 👇 Mockeamos el modelo de User (aún no tocamos DB real)
 vi.mock('../../models/UserModel');
 
 describe('authenticate middleware', () => {
   beforeEach(() => {
-    vi.clearAllMocks(); // limpia el estado de los mocks entre cada test
+    vi.clearAllMocks();
   });
 
   it('debe retornar 401 si no hay header de Authorization', async () => {

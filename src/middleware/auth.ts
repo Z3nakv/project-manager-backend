@@ -28,7 +28,7 @@ export const authenticate = async (
     try {
       decoded = jwt.verify(token, jwtSecret);
     } catch (jwtError) {
-      if (jwtError instanceof TokenExpiredError) {
+      if (jwtError instanceof Error && jwtError.name === "TokenExpiredError") {
         throw new AuthenticationError(
           "Tu sesión ha expirado, inicia sesión de nuevo",
         );

@@ -39,8 +39,9 @@ function getNextSpy() {
   return vi.fn() as unknown as NextFunction;
 }
 
-function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
-  return next.mock.calls[0][0] as AppError;
+function getErrorFromNext(next: NextFunction): AppError {
+  const mockNext = next as unknown as ReturnType<typeof vi.fn>;
+  return mockNext.mock.calls[0][0] as AppError;
 }
 
 describe("AuthController", () => {
@@ -67,13 +68,13 @@ describe("AuthController", () => {
         },
       } as Request;
       const res = mockRes();
+      const next = getNextSpy();
 
-      await AuthController.createAccount(req, res);
+      await AuthController.createAccount(req, res, next);
 
       const userInDb = await User.findOne({ email: "nuevo@test.com" });
       expect(userInDb).not.toBeNull();
-      expect(userInDb?.password).not.toBe("password123"); // debe estar hasheado, no en texto plano
-
+      expect(userInDb?.password).not.toBe("password123");
       const tokenInDb = await Token.findOne({ user: userInDb?._id });
       expect(tokenInDb).not.toBeNull();
 

@@ -15,6 +15,8 @@ vi.mock('../taskService', () => ({
   getTasksByProject: vi.fn(),
 }));
 
+const MOCK_PROJECT_ID = '507f1f77bcf86cd799439011';
+
 describe('suggestTasksForProject', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -30,7 +32,7 @@ describe('suggestTasksForProject', () => {
     } as any);
 
     const result = await suggestTasksForProject({
-      projectId: 'proj-1',
+      projectId: MOCK_PROJECT_ID,
       projectName: 'Proyecto Test',
       projectDescription: 'Una descripción',
       selectedFields: [],
@@ -49,7 +51,7 @@ describe('suggestTasksForProject', () => {
 
     await expect(
       suggestTasksForProject({
-        projectId: 'proj-1',
+        projectId: MOCK_PROJECT_ID,
         projectName: 'Proyecto Test',
         projectDescription: 'Desc',
         selectedFields: [],
@@ -65,7 +67,7 @@ describe('suggestTasksForProject', () => {
     } as any);
 
     await suggestTasksForProject({
-      projectId: 'proj-1',
+      projectId: MOCK_PROJECT_ID,
       projectName: 'Proyecto',
       projectDescription: 'Desc',
       selectedFields: ['estimatedDays'],
@@ -84,7 +86,7 @@ describe('suggestTasksForProject', () => {
     } as any);
 
     await suggestTasksForProject({
-      projectId: 'proj-1',
+      projectId: MOCK_PROJECT_ID,
       projectName: 'Proyecto',
       projectDescription: 'Desc',
       selectedFields: ['labels'],
@@ -106,7 +108,7 @@ describe('suggestTasksForProject', () => {
     } as any);
 
     await suggestTasksForProject({
-      projectId: 'proj-1',
+      projectId: MOCK_PROJECT_ID,
       projectName: 'Proyecto',
       projectDescription: 'Desc',
       selectedFields: [],
