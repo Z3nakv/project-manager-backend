@@ -1,69 +1,39 @@
-import { Request, Response } from "express";
-import Project from "../models/ProjectModel";
-import { Types } from "mongoose";
-import { notifyChangesToTeam } from "../services/notificationService";
-import { createProject, getEditProjectById, getProjectById, updateProject } from "../services/projectService";
+import { NextFunction, Request, Response } from "express";
+import { createProject, deleteProject, getEditProjectById, getProjectById, getProjects, updateProject } from "../services/projectService";
 
 export class ProjectController {
-  static createProject = async (req: Request, res: Response) => {
-    if (!req.user) {
-      res.status(401).json({ error: "No autenticado" });
-      return;
-    }
-    const userId = req.user._id;
-    const body = req.body;
+  static createProject = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await createProject(body, userId);
+      await createProject(req.body, req.user!._id);
       res.status(201).json({message: "Proyecto creado correctamente"});
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error al crear el proyecto" });
+      next(error);
     }
   };
 
-  static getProjects = async (req: Request, res: Response) => {
+  static getProjects = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const projects = await Project.find({
-        $or: [{ manager: req.user?._id }, { team: { $in: [req.user?._id] } }],
-      })
-        .populate("manager")
-        .populate("team")
-        .populate({
-          path: "tasks",
-          select: "status deadline",
-        });
+      const projects = await getProjects(req.user!)
       res.status(200).json(projects);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error al obtener los proyectos" });
+      next(error);
     }
   };
 
-  static getProjectById = async (req: Request, res: Response) => {
+  static getProjectById = async (req: Request, res: Response, next: NextFunction) => {
     const projectId = req.params.projectId as string;
     try {
       const project = await getProjectById(projectId);
-
-      if (!project) {
-        const error = new Error("Proyecto no encontrado");
-        return res.status(404).json({ error: error.message });
-      }
-
       res.status(200).json(project);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error al obtener el proyecto" });
+      next(error);
     }
   };
 
-  static getEditProjectById = async (req: Request, res: Response) => {
+  static getEditProjectById = async (req: Request, res: Response, next: NextFunction) => {
     const projectId = req.params.projectId as string;
     try {
       const project = await getEditProjectById(projectId);
-       if (!project) {
-        const error = new Error("Proyecto no encontrado");
-        return res.status(404).json({ error: error.message });
-      }
       res.status(200).json({
           projectName: project.projectName,
           clientName: project.clientName,
@@ -71,51 +41,25 @@ export class ProjectController {
           team: project.team
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error al obtener el proyecto" });
+      next(error);
     }
   }
 
-  static updateProject = async (req: Request, res: Response) => {
-    const project = req.project;
-    const body = req.body;
+  static updateProject = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await updateProject({project, body});
-      await req.project.save();
-      const members = [...req.project.team, req.project.manager].filter(
-        Boolean,
-      ); // elimina undefined y null
-      await notifyChangesToTeam({
-        members: members as Array<{ _id: Types.ObjectId }>,
-        triggeredBy: req.user!._id!,
-        projectId: req.project._id,
-        taskId: null, // No hay una tarea específica asociada a esta notificación
-        actionType: "PROJECT_UPDATED",
-        content: `${req.user!.name} actualizó el proyecto "${req.project.projectName}"`,
-      });
+      await updateProject(req.project, req.body, req.user!);
       res.json({message: "Proyecto Actualizado"});
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error al actualizar el proyecto" });
+      next(error)
     }
   };
 
-  static deleteProject = async (req: Request, res: Response) => {
+  static deleteProject = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await req.project.deleteOne();
-      const members = [...req.project.team, req.project.manager].filter(Boolean); // elimina undefined y null
-      await notifyChangesToTeam({
-        members: members as Array<{ _id: Types.ObjectId }>,
-        triggeredBy: req.user!._id!,
-        projectId: req.project._id,
-        taskId: null, // No hay una tarea específica asociada a esta notificación
-        actionType: "PROJECT_DELETED",
-        content: `${req.user!.name} eliminó el proyecto "${req.project.projectName}"`,
-      });
+      await deleteProject(req.project, req.user!);
       res.json({message: "Proyecto Eliminado"});
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error al eliminar el proyecto" });
+      next(error);
     }
   };
 }

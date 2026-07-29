@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { ai } from "../config/gemini";
 import { getTasksByProject } from "./taskService";
 
@@ -15,7 +16,7 @@ export async function suggestTasksForProject({
   selectedFields,
   quantity,
 }: suggestTasksForProjectProps) {
-  const existingTasks = await getTasksByProject(projectId);
+  const existingTasks = await getTasksByProject(new Types.ObjectId(projectId));
   const existingNames = existingTasks.map((task) => task.name).join(", ");
 
   const fieldSpecs: Record<string, string> = {

@@ -1,28 +1,18 @@
-import { Request, Response } from "express";
-import Task from "../models/TaskModel";
-import { notifyChangesToTeam } from "../services/notificationService";
-import { Types } from "mongoose";
+import { NextFunction, Request, Response } from "express";
+import {
+  createTask,
+  getTasksByProject,
+  getTaskById,
+  updateTask,
+  deleteTask,
+  assignTask,
+  updateTaskStatus,
+} from "../services/taskService";
 
 export class TaskController {
-  static createTask = async (req: Request, res: Response) => {
+  static createTask = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const task = new Task(req.body);
-      task.project = req.project._id;
-      req.project.tasks.push(task._id);
-      await Promise.all([task.save(), req.project.save()]);
-
-      const members = [...req.project.team, req.project.manager].filter(
-        Boolean,
-      ); // elimina undefined y null
-
-      await notifyChangesToTeam({
-        members: members as Array<{ _id: Types.ObjectId }>,
-        triggeredBy: req.user!._id!,
-        projectId: req.project._id!,
-        taskId: task._id!,
-        actionType: "TASK_CREATED",
-        content: `${req.user!.name} creó la tarea "${task.name}"`,
-      });
+      await createTask(req.project, req.body, req.user!._id, req.user!.name);
 
       res.json({
         message: "Tarea creada correctamente",
@@ -33,40 +23,26 @@ export class TaskController {
         },
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 
-  static getProjectTasks = async (req: Request, res: Response) => {
+  static getProjectTasks = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const tasks = await Task.find({ project: req.project._id }).populate(
-        "project",
-      );
+      const tasks = await getTasksByProject(req.project._id);
+      if (!tasks)
+        return res
+          .status(404)
+          .json({ error: "No se pudo encontrar las tareas" });
       res.json(tasks);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 
   static getProjectTask = async (req: Request, res: Response) => {
     try {
-      const task = await Task.findById(req.task._id)
-        .populate({ path: "completedBy", populate: { path: "user" } })
-        .populate({
-          path: "notes",
-          populate: { path: "createdBy", select: "_id email name" },
-        })
-        .populate({
-          path: "project",
-          populate: [
-            { path: "team", select: "_id" },
-            { path: "manager", select: "_id" },
-          ],
-        })
-        .select("-assignedTo");
-
+      const task = await getTaskById(req.task._id);
       res.status(200).json(task);
     } catch (error) {
       console.error(error);
@@ -74,58 +50,22 @@ export class TaskController {
     }
   };
 
-  static updateProjectTask = async (req: Request, res: Response) => {
+  static updateProjectTask = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.task.name = req.body.name;
-      req.task.description = req.body.description;
-      req.task.deadline = req.body.deadline;
-      req.task.labels = req.body.labels ?? req.task.labels;
-      await req.task.save();
-
-      const members = [...req.project.team, req.project.manager].filter(
-        Boolean,
-      ); // elimina undefined y null
-
-      await notifyChangesToTeam({
-        members: members as Array<{ _id: Types.ObjectId }>,
-        triggeredBy: req.user!._id!,
-        projectId: req.project._id!,
-        taskId: req.task._id!,
-        actionType: "TASK_UPDATED",
-        content: `${req.user!.name} actualizó la tarea "${req.task.name}"`,
-      });
-
+      await updateTask(req.task, req.project, req.user!, req.body);
       res.json({
         message: "Tarea Actualizada Correctamente",
         project: { projectTeam: req.project.team, projectId: req.project._id },
         taskName: req.task.name,
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 
-  static deleteProjectTask = async (req: Request, res: Response) => {
+  static deleteProjectTask = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.project.tasks = req.project.tasks.filter(
-        (task) => task?._id.toString() !== req.task._id.toString(),
-      );
-      await Promise.all([req.task.deleteOne(), req.project.save()]);
-
-      const members = [...req.project.team, req.project.manager].filter(
-        Boolean,
-      ); // elimina undefined y null
-
-      await notifyChangesToTeam({
-        members: members as Array<{ _id: Types.ObjectId }>,
-        triggeredBy: req.user!._id!,
-        projectId: req.project._id!,
-        taskId: req.task._id!,
-        actionType: "TASK_DELETED",
-        content: `${req.user!.name} eliminó la tarea "${req.task.name}"`,
-      });
-
+      await deleteTask(req.task, req.project, req.user!);
       res.json({
         message: "Tarea Eliminada Correctamente",
         project: {
@@ -135,35 +75,13 @@ export class TaskController {
         },
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 
   static updateTaskStatus = async (req: Request, res: Response) => {
     try {
-      const { status } = req.body;
-      req.task.status = status;
-      const data = {
-        user: req.user!._id,
-        status,
-      };
-      req.task.completedBy.push(data);
-      await req.task.save();
-
-      const members = [...req.project.team, req.project.manager].filter(
-        Boolean,
-      ); // elimina undefined y null
-
-      await notifyChangesToTeam({
-        members: members as Array<{ _id: Types.ObjectId }>,
-        triggeredBy: req.user!._id!,
-        projectId: req.project._id!,
-        taskId: req.task._id!,
-        actionType: "TASK_STATUS_UPDATED",
-        content: `${req.user!.name} actualizó el estado de la tarea "${req.task.name}" a "${status}"`,
-      });
-
+      await updateTaskStatus(req.body.status, req.task, req.user!, req.project);
       res.json({
         message: "Tarea Actualizada",
         task: { taskName: req.task.name },
@@ -175,55 +93,18 @@ export class TaskController {
     }
   };
 
-  static assignTask = async (req: Request, res: Response) => {
+  static assignTask = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { userIds } = req.body;
-
-      const validTeamIds = [
-        ...req.project.team.map((id) => id?.toString()),
-        req.project.manager?.toString(),
-      ];
-
-      const allValid = userIds.every((id: string) => validTeamIds.includes(id));
-
-      if (!allValid) {
-        return res
-          .status(400)
-          .json({ error: "Solo puedes asignar colaboradores del proyecto" });
-      }
-
-      req.task.assignedTo = userIds;
-      await req.task.save();
-
-      const members = [...req.project.team, req.project.manager].filter(
-        Boolean,
-      );
-
-      const assignedTaskMembers = members.filter((member) =>
-        req.task.assignedTo.some((assignedId) =>
-          assignedId.equals(member!._id),
-        ),
-      );
-
-      await notifyChangesToTeam({
-        members: assignedTaskMembers as Array<{ _id: Types.ObjectId }>,
-        triggeredBy: req.user!._id!,
-        projectId: req.project._id!,
-        taskId: req.task._id!,
-        actionType: "TASK_STATUS_UPDATED",
-        content: `${req.user!.name} te asigno la tarea "${req.task.name}"`,
-      });
-
+      await assignTask(req.body.userIds, req.project, req.task, req.user!);
       res.json({
         message: "Tarea asignada correctamente",
         taskName: req.task.name,
         projectName: req.project.projectName,
         projectId: req.project._id,
-        userIds: userIds,
+        userIds: req.body.userIds,
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 }

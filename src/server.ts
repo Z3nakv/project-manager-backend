@@ -1,7 +1,6 @@
 import { configDotenv } from 'dotenv';
 import express from 'express';
 import projectRouter from './routes/projectRoutes';
-import connectDB from './config/db';
 import cors from 'cors';
 import authRouter from './routes/authRoutes';
 import { createServer } from 'node:http';
@@ -10,10 +9,11 @@ import { setupSocket } from './socket';
 import notificationsRoute from './routes/notificationRoutes';
 import attachmentRouter from './routes/attachmentRoutes';
 import aiRoutes from './routes/aiRoutes';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './config/swagger';
+import { errorHandler } from './middleware/errorHandler';
 
 configDotenv();
-
-await connectDB();
 
 const server = express();
 
@@ -31,6 +31,10 @@ server.use('/api/auth', authRouter);
 server.use('/api/projects', projectRouter);
 server.use('/api/projects', attachmentRouter);
 server.use('/api/projects', aiRoutes);
+
+server.use(errorHandler);
+//Docs
+server.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 setupSocket(io);
 

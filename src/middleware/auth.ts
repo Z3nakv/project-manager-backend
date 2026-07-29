@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { TokenExpiredError } from "jsonwebtoken";
 import User, { IUser } from "../models/UserModel";
+import { AuthenticationError } from "../utils/errors";
 
 declare global {
   namespace Express {
@@ -18,27 +19,33 @@ export const authenticate = async (
   const bearer = req.headers.authorization;
 
   if (!bearer) {
-    const error = new Error("No Autorizado");
-    return res.status(401).json({ error: error.message });
+    throw new AuthenticationError("No autorizado");
   }
   const [, token] = bearer.split(" ");
+  const jwtSecret = process.env.JWT_SECRET!;
+  let decoded;
   try {
-    const jwtSecret = process.env.JWT_SECRET!;
-    const decoded = jwt.verify(token, jwtSecret);
-
-    if (typeof decoded === "object" && decoded.id) {
-      const user = await User.findById(decoded.id).select("_id name email");
-      if (user) {
-        req.user = user;
-        next();
-      } else {
-        res.status(401).json({ error: "Token no valido" });
-      }
-    } else {
-      res.status(401).json({ error: "Token no valido" });
+    decoded = jwt.verify(token, jwtSecret);
+  } catch (jwtError) {
+    if (jwtError instanceof TokenExpiredError) {
+      throw new AuthenticationError(
+        "Tu sesión ha expirado, inicia sesión de nuevo",
+      );
     }
+    throw new AuthenticationError("Token no válido");
+  }
+
+  if (typeof decoded !== "object" || !decoded.id) {
+    throw new AuthenticationError("Token no válido");
+  }
+  try {
+    const user = await User.findById(decoded.id).select("_id name email");
+    if (!user) {
+      throw new AuthenticationError("Token no válido");
+    }
+    req.user = user;
+    next();
   } catch (error) {
-    console.error(error);
-    res.status(401).json({ error: "Token No Válido" });
+    next(error);
   }
 };

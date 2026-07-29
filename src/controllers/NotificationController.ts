@@ -1,52 +1,39 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import Notification from "../models/NotificationModel";
+import { clearAll, getNotifications, markAsRead } from "../services/notificationService";
+import { Types } from "mongoose";
 
 
 export class NotificationController {
 
-  static getNotifications = async (req: Request, res: Response) => {
+  static getNotifications = async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?._id;
     try {
-      const notifications = await Notification.find({ user: req.user?._id })
-        .populate("triggeredBy", "name email")
-        .populate('project', '_id')
-        .populate('task', '_id')
-        .populate('user', '_id name email')
-        .sort({ createdAt: -1 })
-        .limit(20);
-
+      const notifications = await getNotifications(userId!);
       res.json(notifications);
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 
-  static markAsRead = async (req: Request, res: Response) => {
+  static markAsRead = async (req: Request, res: Response, next: NextFunction) => {
+    const notificationId = req.params.notificationId as string;
+    const userId = new Types.ObjectId(req.user?._id);
     try {
-      const notification = await Notification.findById(req.params.notificationId);
-      if (!notification)
-        return res.status(404).json({ error: "Notificación no encontrada" });
-
-      if (notification.user?.toString() !== req.user?._id.toString()) {
-        return res.status(403).json({ error: "Acción no permitida" });
-      }
-
-      notification.read = true;
-      await notification.save();
+      await markAsRead(notificationId, userId);
       res.json({message: "Notificación leída"});
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error)
     }
   };
 
-  static clearAll = async (req: Request, res: Response) => {
+  static clearAll = async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user!._id;
     try {
-      await Notification.deleteMany({ user: req.user?._id });
+      await clearAll(userId);
       res.json({message: "Notificaciones eliminadas"});
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error)
     }
   };
 }

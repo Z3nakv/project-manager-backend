@@ -21,6 +21,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
     "@types/nodemailer": "^8.0.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "eslint": "^10.8.0",
     "globals": "^17.8.0",
     "mongodb-memory-server": "^11.2.0",
@@ -44,6 +46,8 @@
     "mongoose": "^9.6.2",
     "multer": "^2.2.0",
     "nodemailer": "^8.0.10",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
   }
 }
