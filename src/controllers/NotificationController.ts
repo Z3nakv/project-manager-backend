@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from "express";
-import Notification from "../models/NotificationModel";
 import { clearAll, getNotifications, markAsRead } from "../services/notificationService";
 import { Types } from "mongoose";
 

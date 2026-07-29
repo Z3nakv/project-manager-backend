@@ -1,9 +1,9 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { suggestTasksForProject } from "../services/aiService";
 
 export class AiTasksCreationController {
 
-  static getTasksSuggestions = async (req: Request, res: Response) => {
+  static getTasksSuggestions = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const selectedFields = req.body.selectedFields;
       const quantity = req.body.quantity;
@@ -18,8 +18,7 @@ export class AiTasksCreationController {
 
       res.json(suggestions);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error al generar las sugerencias" });
+      next(error)
     }
   };
 }

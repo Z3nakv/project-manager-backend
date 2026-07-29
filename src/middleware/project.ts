@@ -1,43 +1,47 @@
 import { NextFunction, Request, Response } from "express";
 import Project, { IProject } from "../models/ProjectModel";
+import { NotFoundError, UnauthorizedError } from "../utils/errors";
 
 declare global {
-    namespace Express {
-        interface Request {
-            project: IProject;
-        }
+  namespace Express {
+    interface Request {
+      project: IProject;
     }
+  }
 }
 
-export const projectExists = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const { projectId } = req.params;
-        const project = await Project.findById(projectId);
-        
-        if (!project) {
-            return res.status(404).json({ message: 'Proyecto no encontrado' });
-        }
-        
-        req.project = project; // Attach the project to the request object for later use    
-        next();
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: 'Error al verificar la existencia del proyecto' });
-    }
-}
+export const projectExists = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const projectId = req.params.projectId;
+    const project = await Project.findById(projectId);
+    if (!project) throw new NotFoundError("Proyecto", projectId.toString());
+    req.project = project;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
-export const hasProjectAccess = async (req: Request, res: Response, next: NextFunction) => {
-
+export const hasProjectAccess = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
     const isMember = req.project.team.some(
-        member => member?.toString() === req.user?._id.toString()
+      (member) => member?.toString() === req.user?._id.toString(),
     );
-
-    const isManager = req.project.manager?.toString() === req?.user?._id.toString();
-
-    if(!isMember && !isManager) {
-        const error = new Error('No tienes acceso a este proyecto')
-        return res.status(403).json({ error: error.message })
+    const isManager =
+      req.project.manager?.toString() === req?.user?._id.toString();
+    if (!isMember && !isManager) {
+      throw new UnauthorizedError("No tienes acceso a este proyecto");
     }
-
-    next()
-}
+    next();
+  } catch (error) {
+    next(error);
+  }
+};

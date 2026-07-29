@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 import { IProject } from "../models/ProjectModel";
 import Task, { ILabel, ITask, TaskStatus } from "../models/TaskModel";
-import { notifyChangesToTeam } from "./notificationService";
+import { notifyChangesToTeamSafely } from "./notificationService";
 import { ConflictError, NotFoundError, ValidationError } from "../utils/errors";
 import { IUser } from "../models/UserModel";
 
@@ -21,7 +21,7 @@ export const createTask = async (
   project.tasks.push(task._id);
   await Promise.all([task.save(), project.save()]);
   const members = [...project.team, project.manager].filter(Boolean);
-  await notifyChangesToTeam({
+  await notifyChangesToTeamSafely({
     members: members as Array<{ _id: Types.ObjectId }>,
     triggeredBy,
     projectId: project._id!,
@@ -79,7 +79,7 @@ export const updateTask = async (
 
   const members = [...project.team, project.manager].filter(Boolean); // elimina undefined y null
 
-  await notifyChangesToTeam({
+  await notifyChangesToTeamSafely({
     members: members as Array<{ _id: Types.ObjectId }>,
     triggeredBy: user._id,
     projectId: project._id,
@@ -102,7 +102,7 @@ export const updateTaskStatus = async (status: TaskStatus, task: ITask, user: IU
           Boolean,
         );
   
-        await notifyChangesToTeam({
+        await notifyChangesToTeamSafely({
           members: members as Array<{ _id: Types.ObjectId }>,
           triggeredBy: user!._id!,
           projectId: project._id!,
@@ -124,7 +124,7 @@ export const deleteTask = async (
 
   const members = [...project.team, project.manager].filter(Boolean); // elimina undefined y null
 
-  await notifyChangesToTeam({
+  await notifyChangesToTeamSafely({
     members: members as Array<{ _id: Types.ObjectId }>,
     triggeredBy: user!._id!,
     projectId: project._id!,
@@ -166,7 +166,7 @@ export const assignTask = async (
     task.assignedTo.some((assignedId) => assignedId.equals(member!._id)),
   );
 
-  await notifyChangesToTeam({
+  await notifyChangesToTeamSafely({
     members: assignedTaskMembers as Array<{ _id: Types.ObjectId }>,
     triggeredBy: user._id,
     projectId: project._id,

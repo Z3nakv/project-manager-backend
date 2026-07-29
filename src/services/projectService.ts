@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 import Project, { IProject } from "../models/ProjectModel";
 import { IUser } from "../models/UserModel";
 import { NotFoundError } from "../utils/errors";
-import { notifyChangesToTeam } from "./notificationService";
+import { notifyChangesToTeamSafely } from "./notificationService";
 
 export const createProject = async (
   body: { projectName: string; clientName: string; description: string },
@@ -95,7 +95,7 @@ export const updateProject = async (
 
   await project.save();
   const members = [...project.team, project.manager].filter(Boolean); // elimina undefined y null
-  await notifyChangesToTeam({
+  await notifyChangesToTeamSafely({
     members: members as Array<{ _id: Types.ObjectId }>,
     triggeredBy: user!._id!,
     projectId: project._id,
@@ -108,7 +108,7 @@ export const updateProject = async (
 export const deleteProject = async (project: IProject, user: IUser) => {
   await project.deleteOne();
   const members = [...project.team, project.manager].filter(Boolean); // elimina undefined y null
-  await notifyChangesToTeam({
+  await notifyChangesToTeamSafely({
     members: members as Array<{ _id: Types.ObjectId }>,
     triggeredBy: user._id,
     projectId: project._id,

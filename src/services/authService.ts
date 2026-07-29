@@ -53,6 +53,8 @@ export const createAccount = async (data: {
   token.token = generateToken();
   token.user = user._id;
 
+  await Promise.all([user.save(), token.save()]);
+
   try {
     await AuthEmail.sendConfirmationEmail({
       email: user.email,
@@ -62,8 +64,6 @@ export const createAccount = async (data: {
   } catch (emailError) {
     console.error("Fallo el envío de email de confirmación:", emailError);
   }
-
-  await Promise.all([user.save(), token.save()]);
 };
 
 export const confirmAccount = async (tokenValue: string) => {
@@ -121,6 +121,8 @@ export const requestConfirmationCode = async (email: string) => {
   token.token = generateToken();
   token.user = user._id;
 
+  await Promise.all([user.save(), token.save()]);
+
   try {
     await AuthEmail.sendConfirmationEmail({
       email: user.email,
@@ -130,8 +132,6 @@ export const requestConfirmationCode = async (email: string) => {
   } catch (emailError) {
     console.error("Fallo el reenvío de email de confirmación:", emailError);
   }
-
-  await Promise.allSettled([user.save(), token.save()]);
 };
 
 export const forgotPassword = async (email: string) => {

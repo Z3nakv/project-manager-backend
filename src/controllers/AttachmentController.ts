@@ -1,81 +1,54 @@
-import { Request, Response } from "express";
-import { Attachment } from "../models/Attachment";
-import { uploadToCloudinary } from "../utils/uploadToCloudinary";
-import cloudinary from "../config/cloudinary";
-import { getCloudinaryUrl } from "../utils/cloudinaryUrl";
+﻿import { Request, Response, NextFunction } from "express";
+import * as attachmentService from "../services/attachmentService";
 
 export class AttachmentController {
-  static createAttachment = async (req: Request, res: Response) => {
+  static createAttachment = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No se envió ningún archivo" });
-      }
-
-      const { url, public_id } = await uploadToCloudinary(req.file.buffer);
-      const attachment = await Attachment.create({
-        task: req.task._id,
-        uploadedBy: req.user?._id,
-        filename: req.file.originalname,
-        url,
-        publicId: public_id,
-        mimeType: req.file.mimetype,
-        size: req.file.size,
-      });
-      if (!attachment.publicId) {
-        return res.status(400).json({error: "Parece que hubo un problema"});
-      }
+      const attachment = await attachmentService.createAttachment(
+        req.file!,
+        req.task._id,
+        req.user!._id,
+      );
       res.status(200).json(attachment);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 
-  static getTaskAttachments = async (req: Request, res: Response) => {
-    const taskId = req.task._id;
+  static getTaskAttachments = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
-      const attachments = await Attachment.find({ task: taskId });
-      const taskCardAttachments = attachments.map(attachment => {
-        if (attachment.url) {
-          attachment.url = getCloudinaryUrl(attachment.publicId, 100, 80);
-        }
-        return attachment;
-      });
-
-      res.status(200).json(taskCardAttachments);
+      const attachments = await attachmentService.getTaskAttachments(
+        req.task._id,
+      );
+      res.status(200).json(attachments);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 
-  static deleteTaskAttachment = async (req: Request, res: Response) => {
-    const attachmentId = req.params.imageId!;
+  static deleteTaskAttachment = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
-      const attachment = await Attachment.findById(attachmentId);
-
-      if (!attachment) {
-        return res.status(404).json({ error: "Archivo adjunto no encontrado" });
-      }
-
-      if (attachment.task?.toString() !== req.task._id.toString()) {
-        return res.status(400).json({ error: "Acción no válida" });
-      }
-
-      if (attachment.uploadedBy?.toString() !== req.user?._id.toString()) {
-        return res.status(401).json({ error: "Acción no válida" });
-      }
-
-      await cloudinary.uploader.destroy(attachment.publicId);
-      const deletedAttachment = await attachment.deleteOne();
-
-      if (!deletedAttachment?.acknowledged) {
-        return res.status(400).send("Attachment no se pudo eliminar");
-      }
+      const attachmentId = req.params.imageId as string;
+      await attachmentService.deleteTaskAttachment(
+        attachmentId,
+        req.task._id,
+        req.user!._id,
+      );
       res.status(200).json({message:"Attachment eliminado correctamente"});
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Hubo un error" });
+      next(error);
     }
   };
 }

@@ -16,29 +16,30 @@ export const authenticate = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const bearer = req.headers.authorization;
-
-  if (!bearer) {
-    throw new AuthenticationError("No autorizado");
-  }
-  const [, token] = bearer.split(" ");
-  const jwtSecret = process.env.JWT_SECRET!;
-  let decoded;
   try {
-    decoded = jwt.verify(token, jwtSecret);
-  } catch (jwtError) {
-    if (jwtError instanceof TokenExpiredError) {
-      throw new AuthenticationError(
-        "Tu sesión ha expirado, inicia sesión de nuevo",
-      );
+    const bearer = req.headers.authorization;
+
+    if (!bearer) {
+      throw new AuthenticationError("No autorizado");
     }
-    throw new AuthenticationError("Token no válido");
-  }
+    const [, token] = bearer.split(" ");
+    const jwtSecret = process.env.JWT_SECRET!;
+    let decoded;
+    try {
+      decoded = jwt.verify(token, jwtSecret);
+    } catch (jwtError) {
+      if (jwtError instanceof TokenExpiredError) {
+        throw new AuthenticationError(
+          "Tu sesión ha expirado, inicia sesión de nuevo",
+        );
+      }
+      throw new AuthenticationError("Token no válido");
+    }
 
-  if (typeof decoded !== "object" || !decoded.id) {
-    throw new AuthenticationError("Token no válido");
-  }
-  try {
+    if (typeof decoded !== "object" || !decoded.id) {
+      throw new AuthenticationError("Token no válido");
+    }
+
     const user = await User.findById(decoded.id).select("_id name email");
     if (!user) {
       throw new AuthenticationError("Token no válido");

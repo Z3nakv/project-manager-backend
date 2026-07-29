@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 import Project, { IProject } from "../models/ProjectModel";
 import User, { IUser } from "../models/UserModel";
 import { ConflictError, NotFoundError } from "../utils/errors";
-import { notifyChangesToTeam } from "./notificationService";
+import { notifyChangesToTeamSafely } from "./notificationService";
 
 export const findMemberByEmail = async (email: string) => {
   const user = await User.findOne({ email }).select("_id email name");
@@ -43,7 +43,7 @@ export const addMemberById = async (
 
   const members = [{ _id: userId }];
 
-  await notifyChangesToTeam({
+  await notifyChangesToTeamSafely({
     members: members as Array<{ _id: Types.ObjectId }>,
     triggeredBy: user._id,
     projectId: project._id,
@@ -66,7 +66,7 @@ export const removeMemberById = async (userId: string, project: IProject, user: 
 
       const members = [{ _id: new Types.ObjectId(userId) }];
 
-      await notifyChangesToTeam({
+      await notifyChangesToTeamSafely({
         members: members as Array<{ _id: Types.ObjectId }>,
         triggeredBy: new Types.ObjectId(userId),
         projectId: project._id,
