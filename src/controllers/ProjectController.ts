@@ -13,7 +13,7 @@ export class ProjectController {
 
   static getProjects = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const projects = await getProjects(req.user!)
+      const projects = await getProjects(req.user!);
       res.status(200).json(projects);
     } catch (error) {
       next(error);

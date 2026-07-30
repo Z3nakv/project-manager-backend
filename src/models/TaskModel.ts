@@ -9,7 +9,7 @@ const taskStatus = {
   COMPLETED: "completed",
 } as const;
 
-const labelColor = {
+export const labelColor = {
   RED: "red",
   ORANGE: "orange",
   AMBER: "amber",

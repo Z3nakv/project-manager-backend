@@ -11,8 +11,15 @@ import {
   ConflictError,
   ValidationError,
 } from "../utils/errors";
+import z from "zod";
+import { CreateAccountInput, GoogleAuthResponse, LoginInput, UpdatePasswordInput, UpdateProfileInput } from "../schemas/authSchema";
 
-/* ──────────── HELPERS PRIVADOS ──────────── */
+const googleUserInfoSchema = z.object({
+  email: z.string(),
+  name: z.string(),
+  sub: z.string(),
+  email_verified: z.boolean(),
+});
 
 async function findTokenOrThrow(token: string) {
   const doc = await Token.findOne({ token });
@@ -34,17 +41,11 @@ async function findUserByEmailOrThrow(email: string) {
 
 /* ──────────── MÉTODOS PÚBLICOS ──────────── */
 
-export const createAccount = async (data: {
-  name: string;
-  email: string;
-  password: string;
-}) => {
+export const createAccount = async (data: CreateAccountInput) : Promise<void> => {
   const { name, email, password } = data;
 
   const userExists = await User.findOne({ email });
-  if (userExists) {
-    throw new ConflictError("El usuario ya esta registrado!");
-  }
+  if (userExists) throw new ConflictError("El usuario ya esta registrado!");
 
   const user = new User({ name, email });
   user.password = await hashPassword(password);
@@ -66,19 +67,17 @@ export const createAccount = async (data: {
   }
 };
 
-export const confirmAccount = async (tokenValue: string) => {
+export const confirmAccount = async (tokenValue: string) : Promise<void> => {
   const tokenDoc = await findTokenOrThrow(tokenValue);
 
   const user = await User.findById(tokenDoc.user);
-  if (!user) {
-    throw new NotFoundError("Usuario asociado a este token");
-  }
+  if (!user) throw new NotFoundError("Usuario asociado a este token");
 
   user.confirmed = true;
   await Promise.all([user.save(), tokenDoc.deleteOne()]);
 };
 
-export const login = async (email: string, password: string) => {
+export const login = async ({email, password} : LoginInput) : Promise<string> => {
   const user = await findUserByEmailOrThrow(email);
 
   if (!user.confirmed) {
@@ -110,12 +109,10 @@ export const login = async (email: string, password: string) => {
   return generateJWT({ id: user._id });
 };
 
-export const requestConfirmationCode = async (email: string) => {
+export const requestConfirmationCode = async (email: string) : Promise<void> => {
   const user = await findUserByEmailOrThrow(email);
 
-  if (user.confirmed) {
-    throw new ConflictError("El usuario ya esta confirmado!");
-  }
+  if (user.confirmed) throw new ConflictError("El usuario ya esta confirmado!");
 
   const token = new Token();
   token.token = generateToken();
@@ -134,7 +131,7 @@ export const requestConfirmationCode = async (email: string) => {
   }
 };
 
-export const forgotPassword = async (email: string) => {
+export const forgotPassword = async (email: string) : Promise<void> => {
   const user = await findUserByEmailOrThrow(email);
 
   const token = new Token();
@@ -153,14 +150,14 @@ export const forgotPassword = async (email: string) => {
   }
 };
 
-export const validateToken = async (tokenValue: string) => {
+export const validateToken = async (tokenValue: string) : Promise<void> => {
   await findTokenOrThrow(tokenValue);
 };
 
 export const updatePasswordWithToken = async (
   tokenValue: string,
   password: string,
-) => {
+) : Promise<void> => {
   const tokenDoc = await findTokenOrThrow(tokenValue);
 
   const user = await findUserByIdOrThrow(tokenDoc.user);
@@ -169,20 +166,18 @@ export const updatePasswordWithToken = async (
   await Promise.all([user.save(), tokenDoc.deleteOne()]);
 };
 
-export const getUser = (user: IUser) => {
+export const getUser = (user: IUser) : IUser => {
   return user;
 };
 
 export const updateProfile = async (
   user: IUser,
-  data: { name: string; email: string },
-) => {
+  data: UpdateProfileInput,
+) : Promise<void> => {
   const { name, email } = data;
 
   const userExists = await User.findOne({ email });
-  if (userExists && !userExists._id.equals(user._id)) {
-    throw new ConflictError("El email ya esta registrado");
-  }
+  if (userExists && !userExists._id.equals(user._id)) throw new ConflictError("El email ya esta registrado");
 
   user.name = name;
   user.email = email;
@@ -191,9 +186,9 @@ export const updateProfile = async (
 
 export const updateCurrentUserPassword = async (
   userId: Types.ObjectId,
-  currentPassword: string,
-  newPassword: string,
-) => {
+  {current_password,
+  password} : UpdatePasswordInput
+) : Promise<void> => {
   const user = await findUserByIdOrThrow(userId);
 
   if (!user.password) {
@@ -202,19 +197,19 @@ export const updateCurrentUserPassword = async (
     );
   }
 
-  const isPasswordCorrect = await checkPassword(currentPassword, user.password);
+  const isPasswordCorrect = await checkPassword(current_password, user.password);
   if (!isPasswordCorrect) {
     throw new AuthenticationError("El password actual es incorrecto!");
   }
 
-  user.password = await hashPassword(newPassword);
+  user.password = await hashPassword(password);
   await user.save();
 };
 
 export const checkPasswordService = async (
   userId: Types.ObjectId,
   password: string,
-) => {
+) : Promise<void> => {
   const user = await findUserByIdOrThrow(userId);
 
   const isPasswordCorrect = await checkPassword(password, user.password);
@@ -223,7 +218,8 @@ export const checkPasswordService = async (
   }
 };
 
-export const googleAuth = async (googleToken: string) => {
+
+export const googleAuth = async (googleToken: string) : Promise<GoogleAuthResponse> => {
   const response = await fetch(
     "https://www.googleapis.com/oauth2/v3/userinfo",
     {
@@ -237,13 +233,14 @@ export const googleAuth = async (googleToken: string) => {
     throw new AuthenticationError("Token de Google inválido");
   }
 
-  const payload = await response.json();
+  const rawPayload = await response.json();
+  const result = googleUserInfoSchema.safeParse(rawPayload);
 
-  if (!payload) {
-    throw new ValidationError("Token inválido");
+   if (!result.success) {
+    throw new ValidationError("Respuesta inválida de Google");
   }
 
-  const { email, name, sub: googleId, email_verified } = payload;
+  const { email, name, sub: googleId, email_verified } = result.data;
 
   if (!email_verified) {
     throw new ValidationError("Email de Google no verificado");

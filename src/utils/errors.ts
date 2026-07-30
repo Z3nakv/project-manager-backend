@@ -1,5 +1,3 @@
-// utils/errors.ts
-
 /**
  * Clase base para todos los errores de negocio de la aplicación.
  * El errorHandler global reconoce cualquier subclase de AppError

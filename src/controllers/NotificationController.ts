@@ -6,8 +6,9 @@ import { Types } from "mongoose";
 export class NotificationController {
 
   static getNotifications = async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user?._id;
+    
     try {
+      const userId = req.user?._id;
       const notifications = await getNotifications(userId!);
       res.json(notifications);
     } catch (error) {
@@ -16,9 +17,9 @@ export class NotificationController {
   };
 
   static markAsRead = async (req: Request, res: Response, next: NextFunction) => {
-    const notificationId = req.params.notificationId as string;
-    const userId = new Types.ObjectId(req.user?._id);
     try {
+      const notificationId = req.params.notificationId as string;
+      const userId = new Types.ObjectId(req.user?._id);
       await markAsRead(notificationId, userId);
       res.json({message: "Notificación leída"});
     } catch (error) {
@@ -27,8 +28,8 @@ export class NotificationController {
   };
 
   static clearAll = async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user!._id;
     try {
+      const userId = req.user!._id;
       await clearAll(userId);
       res.json({message: "Notificaciones eliminadas"});
     } catch (error) {

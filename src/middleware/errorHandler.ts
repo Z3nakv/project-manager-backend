@@ -1,4 +1,3 @@
-// middleware/errorHandler.ts
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/errors";
 

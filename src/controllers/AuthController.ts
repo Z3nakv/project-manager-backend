@@ -1,5 +1,5 @@
 ﻿import { Request, Response, NextFunction } from "express";
-import * as authService from "../services/authService";
+import { checkPasswordService, confirmAccount, createAccount, forgotPassword, getUser, googleAuth, login, requestConfirmationCode, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
 
 export class AuthController {
   static createAccount = async (
@@ -9,7 +9,7 @@ export class AuthController {
   ) => {
     try {
       const { name, email, password } = req.body;
-      await authService.createAccount({ name, email, password });
+      await createAccount({ name, email, password });
       res.json({
         message:
           "Cuenta creada! Revisa tu email para confirmarla",
@@ -26,7 +26,7 @@ export class AuthController {
   ) => {
     try {
       const { token } = req.body;
-      await authService.confirmAccount(token);
+      await confirmAccount(token);
       res.json({ message: "Cuenta confirmada correctamente" });
     } catch (error) {
       next(error);
@@ -40,7 +40,7 @@ export class AuthController {
   ) => {
     try {
       const { email, password } = req.body;
-      const jwt = await authService.login(email, password);
+      const jwt = await login({email, password});
       res.json(jwt);
     } catch (error) {
       next(error);
@@ -54,7 +54,7 @@ export class AuthController {
   ) => {
     try {
       const { email } = req.body;
-      await authService.requestConfirmationCode(email);
+      await requestConfirmationCode(email);
       res.json({
         message:
           "Se envio un nuevo token, Revisa tu email para confirmarla",
@@ -71,7 +71,7 @@ export class AuthController {
   ) => {
     try {
       const { email } = req.body;
-      await authService.forgotPassword(email);
+      await forgotPassword(email);
       res.json({
         message: "Revisa tu email para instrucciones",
       });
@@ -87,7 +87,7 @@ export class AuthController {
   ) => {
     try {
       const { token } = req.body;
-      await authService.validateToken(token);
+      await validateToken(token);
       res.json({
         message: "Token valido, Define tu nuevo password",
       });
@@ -104,7 +104,7 @@ export class AuthController {
     try {
       const token = req.params.token as string;
       const { password } = req.body;
-      await authService.updatePasswordWithToken(token, password);
+      await updatePasswordWithToken(token, password);
       res.json({
         message: "El password se modifico correctamente",
       });
@@ -119,7 +119,7 @@ export class AuthController {
     next: NextFunction,
   ) => {
     try {
-      const user = authService.getUser(req.user!);
+      const user = getUser(req.user!);
       res.json(user);
     } catch (error) {
       next(error);
@@ -133,7 +133,7 @@ export class AuthController {
   ) => {
     try {
       const { name, email } = req.body;
-      await authService.updateProfile(req.user!, { name, email });
+      await updateProfile(req.user!, { name, email });
       res.json({ message: "Perfil actualizado correctamente" });
     } catch (error) {
       next(error);
@@ -147,10 +147,10 @@ export class AuthController {
   ) => {
     try {
       const { current_password, password } = req.body;
-      await authService.updateCurrentUserPassword(
+      await updateCurrentUserPassword(
         req.user!._id,
-        current_password,
-        password,
+        {current_password,
+        password}
       );
       res.json({
         message: "El password se modifico correctamente",
@@ -167,7 +167,7 @@ export class AuthController {
   ) => {
     try {
       const { password } = req.body;
-      await authService.checkPasswordService(req.user!._id, password);
+      await checkPasswordService(req.user!._id, password);
       res.json({ message: "Password Correcto" });
     } catch (error) {
       next(error);
@@ -181,7 +181,7 @@ export class AuthController {
   ) => {
     try {
       const { token } = req.body;
-      const result = await authService.googleAuth(token);
+      const result = await googleAuth(token);
       res.json(result);
     } catch (error) {
       next(error);

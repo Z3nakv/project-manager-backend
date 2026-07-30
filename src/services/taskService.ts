@@ -1,28 +1,25 @@
 import { Types } from "mongoose";
 import { IProject } from "../models/ProjectModel";
-import Task, { ILabel, ITask, TaskStatus } from "../models/TaskModel";
+import Task, { ITask, TaskStatus } from "../models/TaskModel";
 import { notifyChangesToTeamSafely } from "./notificationService";
 import { ConflictError, NotFoundError, ValidationError } from "../utils/errors";
 import { IUser } from "../models/UserModel";
-
-type CreateTaskInput = {
-  name: string;
-  description: string;
-};
+import { getProjectMembers } from "../utils/projectHelpers";
+import { CreateTaskInput, UpdateTaskInput } from "../schemas/taskSchema";
 
 export const createTask = async (
   project: IProject,
   data: CreateTaskInput,
   triggeredBy: Types.ObjectId,
   triggeredByName: string,
-) => {
+) : Promise<ITask> => {
   const task = new Task(data);
   task.project = project._id;
   project.tasks.push(task._id);
   await Promise.all([task.save(), project.save()]);
-  const members = [...project.team, project.manager].filter(Boolean);
+  const members = getProjectMembers(project);
   await notifyChangesToTeamSafely({
-    members: members as Array<{ _id: Types.ObjectId }>,
+    members: members,
     triggeredBy,
     projectId: project._id!,
     taskId: task._id!,
@@ -32,11 +29,11 @@ export const createTask = async (
   return task;
 };
 
-export const getTasksByProject = async (projectId: Types.ObjectId) => {
+export const getTasksByProject = async (projectId: Types.ObjectId) : Promise<ITask[]> => {
   return Task.find({ project: projectId });
 };
 
-export const getTaskById = async (taskId: Types.ObjectId) => {
+export const getTaskById = async (taskId: Types.ObjectId) : Promise<ITask> => {
   const task = await Task.findById(taskId)
     .populate({ path: "completedBy", populate: { path: "user" } })
     .populate({
@@ -52,35 +49,25 @@ export const getTaskById = async (taskId: Types.ObjectId) => {
     })
     .select("-assignedTo");
 
-  if (!task) {
-    throw new NotFoundError("Tarea", taskId.toString());
-  }
+  if (!task) throw new NotFoundError("Tarea", taskId.toString());
   return task;
-};
-
-type bodyInput = {
-  name: string;
-  description: string;
-  deadline: Date;
-  labels: ILabel[];
 };
 
 export const updateTask = async (
   task: ITask,
   project: IProject,
   user: IUser,
-  body: bodyInput,
-) => {
+  body: UpdateTaskInput,
+) : Promise<void> => {
   task.name = body.name;
   task.description = body.description;
-  task.deadline = body.deadline;
-  task.labels = body.labels ?? task.labels;
+  task.deadline = body.deadline ?? task.deadline;
+  task.labels = body.labels;
   await task.save();
 
-  const members = [...project.team, project.manager].filter(Boolean); // elimina undefined y null
-
+  const members = getProjectMembers(project);
   await notifyChangesToTeamSafely({
-    members: members as Array<{ _id: Types.ObjectId }>,
+    members: members,
     triggeredBy: user._id,
     projectId: project._id,
     taskId: task._id,
@@ -89,7 +76,11 @@ export const updateTask = async (
   });
 };
 
-export const updateTaskStatus = async (status: TaskStatus, task: ITask, user: IUser, project: IProject) => {
+export const updateTaskStatus = async (
+  status: TaskStatus, 
+  task: ITask, 
+  user: IUser, 
+  project: IProject) : Promise<void> => {
         task.status = status;
         const data = {
           user: user._id,
@@ -98,12 +89,9 @@ export const updateTaskStatus = async (status: TaskStatus, task: ITask, user: IU
         task.completedBy.push(data);
         await task.save();
   
-        const members = [...project.team, project.manager].filter(
-          Boolean,
-        );
-  
+        const members = getProjectMembers(project);
         await notifyChangesToTeamSafely({
-          members: members as Array<{ _id: Types.ObjectId }>,
+          members: members,
           triggeredBy: user!._id!,
           projectId: project._id!,
           taskId: task._id!,
@@ -116,16 +104,15 @@ export const deleteTask = async (
   task: ITask,
   project: IProject,
   user: IUser,
-) => {
+) : Promise<void> => {
   project.tasks = project.tasks.filter(
     (t) => t?._id.toString() !== task?._id.toString(),
   );
   await Promise.all([task.deleteOne(), project.save()]);
 
-  const members = [...project.team, project.manager].filter(Boolean); // elimina undefined y null
-
+  const members = getProjectMembers(project);
   await notifyChangesToTeamSafely({
-    members: members as Array<{ _id: Types.ObjectId }>,
+    members: members,
     triggeredBy: user!._id!,
     projectId: project._id!,
     taskId: task._id!,
@@ -139,7 +126,7 @@ export const assignTask = async (
   project: IProject,
   task: ITask,
   user: IUser,
-) => {
+) : Promise<ITask> => {
 
   if (!project.manager) {
     throw new ConflictError(
@@ -153,21 +140,18 @@ export const assignTask = async (
 
   const allValid = userIds.every((id: string) => validTeamIds.includes(id));
 
-  if (!allValid) {
-    throw new ValidationError("Solo puedes asignar colaboradores del proyecto");
-  }
+  if (!allValid) throw new ValidationError("Solo puedes asignar colaboradores del proyecto");
 
   task.assignedTo = userIds.map((id) => new Types.ObjectId(id));
   await task.save();
 
-  const members = [...project.team, project.manager].filter(Boolean);
-
+  const members = getProjectMembers(project);
   const assignedTaskMembers = members.filter((member) =>
     task.assignedTo.some((assignedId) => assignedId.equals(member!._id)),
   );
 
   await notifyChangesToTeamSafely({
-    members: assignedTaskMembers as Array<{ _id: Types.ObjectId }>,
+    members: assignedTaskMembers,
     triggeredBy: user._id,
     projectId: project._id,
     taskId: task._id,

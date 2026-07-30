@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { ai } from "../config/gemini";
 import { getTasksByProject } from "./taskService";
+import { SuggestTasksResponse } from "../schemas/aiSchema";
 
 type suggestTasksForProjectProps = {
   projectId: string;
@@ -15,7 +16,7 @@ export async function suggestTasksForProject({
   projectDescription,
   selectedFields,
   quantity,
-}: suggestTasksForProjectProps) {
+}: suggestTasksForProjectProps) : Promise<SuggestTasksResponse> {
   const existingTasks = await getTasksByProject(new Types.ObjectId(projectId));
   const existingNames = existingTasks.map((task) => task.name).join(", ");
 

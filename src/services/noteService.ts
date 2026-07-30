@@ -1,18 +1,19 @@
 import { Types } from "mongoose";
-import { Note } from "../models/NoteModel";
+import { INote, Note } from "../models/NoteModel";
 import { IProject } from "../models/ProjectModel";
 import { ITask } from "../models/TaskModel";
 import { IUser } from "../models/UserModel";
 import { io } from "../server";
 import { notifyChangesToTeamSafely } from "./notificationService";
 import { ConflictError, NotFoundError, UnauthorizedError } from "../utils/errors";
+import { getProjectMembers } from "../utils/projectHelpers";
 
 export const createNote = async (
   content: string,
   user: IUser,
   task: ITask,
   project: IProject,
-) => {
+) : Promise<void> => {
   const note = new Note();
   note.content = content;
   const { _id } = user;
@@ -23,10 +24,10 @@ export const createNote = async (
 
   await Promise.all([task.save(), note.save()]);
 
-  const members = [...project.team, project.manager].filter(Boolean);
+  const members = getProjectMembers(project);
 
       await notifyChangesToTeamSafely({
-        members: members as Array<{ _id: Types.ObjectId }>,
+        members: members,
         triggeredBy: user._id,
         projectId: project._id,
         taskId: null,
@@ -44,35 +45,27 @@ export const createNote = async (
     });
 };
 
-export const getTaskNotes = async (taskId: Types.ObjectId) => {
+export const getTaskNotes = async (taskId: Types.ObjectId) : Promise<INote[]> => {
   return Note.find({ task: taskId }).populate("createdBy");
   
 };
 
-export const deleteNote = async (noteId: string, task: ITask, user: IUser, project: IProject) => {
+export const deleteNote = async (noteId: string, task: ITask, user: IUser, project: IProject) : Promise<void> => {
       const note = await Note.findById(noteId);
 
-      if (!note) {
-        throw new NotFoundError("Nota", noteId);
-      }
-
-      if (note.task.toString() !== task._id.toString()) {
-        throw new ConflictError("La nota no pertenece a la tarea actual");
-      }
-
-      if (note.createdBy.toString() !== user?._id.toString()) {
-        throw new UnauthorizedError("No tienes permiso para eliminar esta nota");
-      }
+      if (!note) throw new NotFoundError("Nota", noteId);
+      if (note.task.toString() !== task._id.toString()) throw new ConflictError("La nota no pertenece a la tarea actual");
+      if (note.createdBy.toString() !== user?._id.toString()) throw new UnauthorizedError("No tienes permiso para eliminar esta nota");
 
       task.notes = task.notes.filter((n) => n.toString() !== noteId.toString());
 
       await Promise.all([task.save(), note.deleteOne()]);
 
-      const members = [...project.team, project.manager].filter(Boolean);
+      const members = getProjectMembers(project);
       const content = `${user!.name} eliminó la nota "${task.name}"`;
 
       await notifyChangesToTeamSafely({
-        members: members as Array<{ _id: Types.ObjectId }>,
+        members: members,
         triggeredBy: user._id,
         projectId: project._id,
         taskId: null,
@@ -90,11 +83,9 @@ export const deleteNote = async (noteId: string, task: ITask, user: IUser, proje
         });
 }
 
-export const updateNoteStatus = async (noteId: string) => {
+export const updateNoteStatus = async (noteId: string) : Promise<void> => {
       const note = await Note.findById(noteId);
-      if (!note) {
-        throw new NotFoundError("Nota", noteId)
-      }
+      if (!note) throw new NotFoundError("Nota", noteId);
       note.completed = !note.completed;
       await note.save();
 }

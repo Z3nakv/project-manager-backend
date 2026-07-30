@@ -1,5 +1,5 @@
 ﻿import { Request, Response, NextFunction } from "express";
-import * as attachmentService from "../services/attachmentService";
+import { createAttachment, deleteTaskAttachment, getTaskAttachments } from "../services/attachmentService";
 
 export class AttachmentController {
   static createAttachment = async (
@@ -8,7 +8,7 @@ export class AttachmentController {
     next: NextFunction,
   ) => {
     try {
-      const attachment = await attachmentService.createAttachment(
+      const attachment = await createAttachment(
         req.file!,
         req.task._id,
         req.user!._id,
@@ -25,7 +25,7 @@ export class AttachmentController {
     next: NextFunction,
   ) => {
     try {
-      const attachments = await attachmentService.getTaskAttachments(
+      const attachments = await getTaskAttachments(
         req.task._id,
       );
       res.status(200).json(attachments);
@@ -41,7 +41,7 @@ export class AttachmentController {
   ) => {
     try {
       const attachmentId = req.params.imageId as string;
-      await attachmentService.deleteTaskAttachment(
+      await deleteTaskAttachment(
         attachmentId,
         req.task._id,
         req.user!._id,

@@ -3,16 +3,15 @@ import Project, { IProject } from "../models/ProjectModel";
 import { IUser } from "../models/UserModel";
 import { NotFoundError } from "../utils/errors";
 import { notifyChangesToTeamSafely } from "./notificationService";
+import { CreateProject } from "../schemas/projectSchema";
+import { getProjectMembers } from "../utils/projectHelpers";
 
-export const createProject = async (
-  body: { projectName: string; clientName: string; description: string },
-  userId: Types.ObjectId,
-) => {
+export const createProject = async (body: CreateProject,userId: Types.ObjectId) : Promise<IProject> => {
   const project = await Project.create({ ...body, manager: userId });
   return project;
 };
 
-export const getProjects = async (user: IUser) => {
+export const getProjects = async (user: IUser) : Promise<IProject[]> => {
   return Project.find({
     $or: [{ manager: user._id }, { team: { $in: [user._id] } }],
   })
@@ -24,7 +23,7 @@ export const getProjects = async (user: IUser) => {
     });
 };
 
-export const getProjectById = async (projectId: string) => {
+export const getProjectById = async (projectId: string) : Promise<IProject> => {
   const project = await Project.findById(projectId)
     .populate({
       path: "tasks",
@@ -64,50 +63,36 @@ export const getProjectById = async (projectId: string) => {
     .populate("manager")
     .populate("team");
 
-  if (!project) {
-    throw new NotFoundError("Project", projectId);
-  }
-
+  if (!project) throw new NotFoundError("Project", projectId);
   return project;
 };
 
-export const getEditProjectById = async (projectId: string) => {
-  const project = await Project.findById(projectId).populate({
-    path: "team",
-    select: "_id",
-  });
-
-  if (!project) {
-    throw new NotFoundError("Project", projectId);
-  }
-
+export const getEditProjectById = async (projectId: string) : Promise<IProject> => {
+  const project = await Project.findById(projectId).populate({path: "team",select: "_id"});
+  if (!project) throw new NotFoundError("Project", projectId);
   return project;
 };
 
-export const updateProject = async (
-  project: IProject,
-  body: { clientName: string; projectName: string; description: string },
-  user: IUser,
-) => {
+export const updateProject = async (project: IProject, body: CreateProject, user: IUser) : Promise<void> => {
   project.clientName = body.clientName;
   project.projectName = body.projectName;
   project.description = body.description;
 
   await project.save();
-  const members = [...project.team, project.manager].filter(Boolean); // elimina undefined y null
+  const members = getProjectMembers(project);
   await notifyChangesToTeamSafely({
     members: members as Array<{ _id: Types.ObjectId }>,
-    triggeredBy: user!._id!,
+    triggeredBy: user._id,
     projectId: project._id,
     taskId: null,
     actionType: "PROJECT_UPDATED",
-    content: `${user!.name} actualizó el proyecto "${project.projectName}"`,
+    content: `${user.name} actualizó el proyecto "${project.projectName}"`,
   });
 };
 
-export const deleteProject = async (project: IProject, user: IUser) => {
+export const deleteProject = async (project: IProject, user: IUser) : Promise<void> => {
   await project.deleteOne();
-  const members = [...project.team, project.manager].filter(Boolean); // elimina undefined y null
+  const members = getProjectMembers(project);
   await notifyChangesToTeamSafely({
     members: members as Array<{ _id: Types.ObjectId }>,
     triggeredBy: user._id,

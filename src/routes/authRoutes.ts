@@ -4,6 +4,7 @@ import { handleInputErrors } from "../middleware/validation";
 import { AuthController } from "../controllers/AuthController";
 import { authenticate } from "../middleware/auth";
 import { idemPotencyMiddleware } from "../middleware/itemPotency";
+import { authLimiter, registerLimiter } from "../middleware/limiter";
 
 const router = Router();
 
@@ -43,7 +44,8 @@ router.use(idemPotencyMiddleware);
  *       409:
  *         $ref: "#/components/responses/Conflict"
  */
-router.post('/create-account', 
+router.post('/create-account',
+    registerLimiter,
     body('name')
     .notEmpty().withMessage('Name cannot be empty'),
     body('password')
@@ -138,8 +140,10 @@ router.post('/confirm-account',
  *         $ref: "#/components/responses/NotFound"
  */
 router.post('/login',
+    authLimiter,
     body('email')
-    .notEmpty().withMessage('Email no valido'),
+    .notEmpty().withMessage('Email not valid')
+    .isEmail().withMessage('E-mail not valid'),
     body('password')
     .notEmpty().withMessage('password cannot be empty'),
     handleInputErrors,

@@ -1,5 +1,5 @@
 ﻿import { Types } from "mongoose";
-import { Attachment } from "../models/Attachment";
+import { Attachment, IAttachment } from "../models/Attachment";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary";
 import cloudinary from "../config/cloudinary";
 import { getCloudinaryUrl } from "../utils/cloudinaryUrl";
@@ -13,13 +13,9 @@ export const createAttachment = async (
   file: Express.Multer.File,
   taskId: Types.ObjectId,
   userId: Types.ObjectId,
-) => {
-  if (!file) {
-    throw new ValidationError("No se envió ningún archivo");
-  }
-
+) : Promise<IAttachment> => {
+  if (!file) throw new ValidationError("No se envió ningún archivo");
   const { url, public_id } = await uploadToCloudinary(file.buffer);
-
   const attachment = await Attachment.create({
     task: taskId,
     uploadedBy: userId,
@@ -29,11 +25,10 @@ export const createAttachment = async (
     mimeType: file.mimetype,
     size: file.size,
   });
-
   return attachment;
 };
 
-export const getTaskAttachments = async (taskId: Types.ObjectId) => {
+export const getTaskAttachments = async (taskId: Types.ObjectId) : Promise<IAttachment[]> => {
   const attachments = await Attachment.find({ task: taskId });
 
   return attachments.map((attachment) => {
@@ -49,7 +44,7 @@ export const deleteTaskAttachment = async (
   attachmentId: string,
   taskId: Types.ObjectId,
   userId: Types.ObjectId,
-) => {
+) : Promise<void> => {
   const attachment = await Attachment.findById(attachmentId);
   if (!attachment) {
     throw new NotFoundError("Archivo adjunto", attachmentId);

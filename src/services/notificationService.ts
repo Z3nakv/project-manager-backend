@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import Notification, { NotificationType, notificationTypes } from "../models/NotificationModel";
+import Notification, { INotification, NotificationType, notificationTypes } from "../models/NotificationModel";
 import { io } from "../server";
 import { NotFoundError, UnauthorizedError } from "../utils/errors";
 
@@ -25,40 +25,31 @@ export const createNotification = async (data: CreateNotifcationProps) => {
       return await Notification.create(data);
 };
 
-export const getNotifications = async (userId: Types.ObjectId) => {
+export const getNotifications = async (userId: Types.ObjectId) : Promise<INotification[]> => {
   const notifications = await Notification.find({ user: userId })
         .populate("triggeredBy", "name email")
         .populate('project', '_id')
         .populate('task', '_id')
-        .populate('user', '_id name email')
         .sort({ createdAt: -1 })
         .limit(20);
-    if(notifications.length < 1) {
-      throw new NotFoundError("Notifications", userId.toString());
-    }
     return notifications;
 }
 
-export const markAsRead = async (notificationId: string, userId: Types.ObjectId) => {
+export const markAsRead = async (notificationId: string, userId: Types.ObjectId) : Promise<void> => {
   const notification = await Notification.findById(notificationId);
-        if (!notification){
-          throw new NotFoundError("Notification", notificationId);
-        }
-  
-        if (notification.user?.toString() !== userId.toString()) {
-          throw new UnauthorizedError()
-        }
-  
+        if (!notification) throw new NotFoundError("Notification", notificationId);
+        if (notification.user?.toString() !== userId.toString()) throw new UnauthorizedError();
         notification.read = true;
         await notification.save();
 }
 
-export const clearAll = async (userId: Types.ObjectId) => {
-   return Notification.deleteMany({ user: userId });
-
+export const clearAll = async (userId: Types.ObjectId) : Promise<void> => {
+    await Notification.deleteMany({ user: userId });
 }
 
-export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, taskId, actionType, content }: NotifyTaskStatusParams) => {
+export const notifyChangesToTeam = async ({ 
+  members, triggeredBy, projectId, taskId, actionType, content }: NotifyTaskStatusParams
+) : Promise<void> => {
 
   const results = await Promise.allSettled(
     members
@@ -84,7 +75,7 @@ export const notifyChangesToTeam = async ({ members, triggeredBy, projectId, tas
   });
 }
 
-export const notifyChangesToTeamSafely = async (params: NotifyTaskStatusParams) => {
+export const notifyChangesToTeamSafely = async (params: NotifyTaskStatusParams) : Promise<void> => {
   try {
     await notifyChangesToTeam(params);
   } catch (error) {

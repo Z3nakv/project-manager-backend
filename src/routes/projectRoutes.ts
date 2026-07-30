@@ -9,6 +9,8 @@ import { hasAuthorization, taskExists } from "../middleware/task";
 import { authenticate } from "../middleware/auth";
 import { TeamMemberController } from "../controllers/TeamController";
 import { idemPotencyMiddleware } from "../middleware/itemPotency";
+import { validate } from "../middleware/validate";
+import { CreateProjectSchema } from "../schemas/projectSchema";
 
 
 const router = Router();
@@ -132,11 +134,15 @@ router.get('/:projectId/edit',
  *       401:
  *         $ref: "#/components/responses/Unauthorized"
  */
-router.post('/create-project', 
+/* router.post('/create-project', 
     body('projectName').notEmpty().withMessage('El nombre del proyecto es necesario'),
     body('clientName').notEmpty().withMessage('El nombre del cliente es necesario'),
     body('description').notEmpty().withMessage('La descripcion es necesaria'),
     handleInputErrors,
+    ProjectController.createProject); */
+    
+router.post('/create-project', 
+    validate(CreateProjectSchema),
     ProjectController.createProject);
 
 router.param('projectId', projectExists);
