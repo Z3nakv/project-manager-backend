@@ -3,7 +3,7 @@ import Token from "../models/TokenModel";
 import { Types } from "mongoose";
 import { hashPassword, checkPassword } from "../utils/auth";
 import { generateToken } from "../utils/token";
-import { generateJWT } from "../utils/jwt";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
 import { AuthEmail } from "../emails/authEmail";
 import {
   NotFoundError,
@@ -13,6 +13,7 @@ import {
 } from "../utils/errors";
 import z from "zod";
 import { CreateAccountInput, GoogleAuthResponse, LoginInput, UpdatePasswordInput, UpdateProfileInput } from "../schemas/authSchema";
+import jwt from "jsonwebtoken";
 
 const googleUserInfoSchema = z.object({
   email: z.string(),
@@ -77,7 +78,8 @@ export const confirmAccount = async (tokenValue: string) : Promise<void> => {
   await Promise.all([user.save(), tokenDoc.deleteOne()]);
 };
 
-export const login = async ({email, password} : LoginInput) : Promise<string> => {
+export const login = async ({email, password} : LoginInput) 
+: Promise<{accessToken:string, refreshToken:string}> => {
   const user = await findUserByEmailOrThrow(email);
 
   if (!user.confirmed) {
@@ -102,11 +104,32 @@ export const login = async ({email, password} : LoginInput) : Promise<string> =>
   }
 
   const isPasswordCorrect = await checkPassword(password, user.password);
-  if (!isPasswordCorrect) {
-    throw new AuthenticationError("Password incorrecto");
+  if (!isPasswordCorrect) throw new AuthenticationError("Password incorrecto");
+
+  const accessToken = generateAccessToken({ id: user._id });
+  const refreshToken = generateRefreshToken({ id: user._id });
+
+  return { accessToken, refreshToken };
+};
+
+export const refreshAccessToken = async (refreshToken: string): Promise<string> => {
+
+  if (!refreshToken) throw new AuthenticationError("Refresh token no proporcionado");
+
+  let decoded;
+  try {
+    decoded = jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET!);
+  } catch (error) {
+    console.error(error)
+    throw new AuthenticationError("Refresh token inválido o expirado");
   }
 
-  return generateJWT({ id: user._id });
+  if (typeof decoded !== "object" || !decoded.id) {
+    throw new AuthenticationError("Refresh token inválido");
+  }
+
+  const user = await findUserByIdOrThrow(decoded.id);
+  return generateAccessToken({ id: user._id });
 };
 
 export const requestConfirmationCode = async (email: string) : Promise<void> => {
@@ -264,7 +287,8 @@ export const googleAuth = async (googleToken: string) : Promise<GoogleAuthRespon
     });
   }
 
-  const token = generateJWT({ id: user._id });
+  const accessToken = generateAccessToken({ id: user._id });
+  const refreshToken = generateRefreshToken({ id: user._id });
 
-  return { user, token };
+  return { user, accessToken, refreshToken };
 };

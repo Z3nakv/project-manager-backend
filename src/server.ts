@@ -14,6 +14,7 @@ import swaggerSpec from './config/swagger';
 import { errorHandler } from './middleware/errorHandler';
 import helmet from 'helmet';
 import { aiLimiter, apiLimiter } from './middleware/limiter';
+import cookieParser from 'cookie-parser';
 
 configDotenv();
 
@@ -24,9 +25,11 @@ export const io = new Server(httpServer, {
     cors: {origin: process.env.FRONTEND_URL}
 });
 
+server.use(cookieParser());
 server.set("trust proxy", 1);
 server.use(cors({
     origin:process.env.FRONTEND_URL,
+    credentials: true
 }));
 server.use(helmet());
 server.use("/api", apiLimiter);

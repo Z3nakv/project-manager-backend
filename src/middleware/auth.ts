@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { TokenExpiredError } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import User, { IUser } from "../models/UserModel";
 import { AuthenticationError } from "../utils/errors";
 

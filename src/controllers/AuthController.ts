@@ -1,5 +1,5 @@
 ﻿import { Request, Response, NextFunction } from "express";
-import { checkPasswordService, confirmAccount, createAccount, forgotPassword, getUser, googleAuth, login, requestConfirmationCode, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
+import { checkPasswordService, confirmAccount, createAccount, forgotPassword, getUser, googleAuth, login, refreshAccessToken, requestConfirmationCode, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
 
 export class AuthController {
   static createAccount = async (
@@ -40,12 +40,38 @@ export class AuthController {
   ) => {
     try {
       const { email, password } = req.body;
-      const jwt = await login({email, password});
-      res.json(jwt);
+      const { accessToken, refreshToken } = await login({email, password});
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      })
+      res.json({ accessToken });
     } catch (error) {
       next(error);
     }
   };
+
+  static refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+      const accessToken = await refreshAccessToken(refreshToken);
+      res.json({ accessToken });
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  static logout = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.clearCookie("refreshToken");
+      res.json({ message: "Sesion cerrada correctamente"});
+    } catch (error) {
+      next(error)
+    }
+  }
 
   static requestConfirmationCode = async (
     req: Request,
@@ -181,8 +207,15 @@ export class AuthController {
   ) => {
     try {
       const { token } = req.body;
-      const result = await googleAuth(token);
-      res.json(result);
+      const { user, accessToken, refreshToken } = await googleAuth(token);
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      })
+      res.json({ user, accessToken });
     } catch (error) {
       next(error);
     }

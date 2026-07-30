@@ -28,5 +28,6 @@ export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
 
 export interface GoogleAuthResponse {
   user: IUser;
-  token: string;
+  accessToken: string;
+  refreshToken: string;
 }

@@ -5,6 +5,8 @@ import { AuthController } from "../controllers/AuthController";
 import { authenticate } from "../middleware/auth";
 import { idemPotencyMiddleware } from "../middleware/itemPotency";
 import { authLimiter, registerLimiter } from "../middleware/limiter";
+import { validate } from "../middleware/validate";
+import { loginSchema } from "../schemas/authSchema";
 
 const router = Router();
 
@@ -141,15 +143,14 @@ router.post('/confirm-account',
  */
 router.post('/login',
     authLimiter,
-    body('email')
-    .notEmpty().withMessage('Email not valid')
-    .isEmail().withMessage('E-mail not valid'),
-    body('password')
-    .notEmpty().withMessage('password cannot be empty'),
-    handleInputErrors,
+    validate(loginSchema),
     AuthController.login);
 
-/**
+router.post("/refresh-token", AuthController.refreshToken);
+
+router.post("/logout", AuthController.logout);
+
+;/**
  * @openapi
  * /auth/request-code:
  *   post:
