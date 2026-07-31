@@ -1,4 +1,3 @@
-// src/services/__tests__/projectService.test.ts
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { Types } from 'mongoose';
 import { createProject, getProjectById, updateProject } from '../projectService';

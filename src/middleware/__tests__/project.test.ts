@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { hasProjectAccess } from '../project';
 import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';

@@ -3,7 +3,6 @@ import { INote, Note } from "../models/NoteModel";
 import { IProject } from "../models/ProjectModel";
 import { ITask } from "../models/TaskModel";
 import { IUser } from "../models/UserModel";
-import { io } from "../server";
 import { notifyChangesToTeamSafely } from "./notificationService";
 import { ConflictError, NotFoundError, UnauthorizedError } from "../utils/errors";
 import { getProjectMembers } from "../utils/projectHelpers";

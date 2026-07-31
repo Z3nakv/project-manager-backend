@@ -1,6 +1,5 @@
-// src/middleware/__tests__/task.test.ts
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { hasAuthorization } from '../task';
 import Project from '../../models/ProjectModel';
