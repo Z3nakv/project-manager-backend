@@ -30,7 +30,7 @@ export class TeamMemberController {
   static addMemberById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { _id } = req.body;
-      await addMemberById(_id, req.project)
+      await addMemberById(_id, req.project, req.user!._id)
       res.json({ message: "Usuario agregado correctamente" });
     } catch (error) {
       next(error);
@@ -40,7 +40,7 @@ export class TeamMemberController {
   static removeMemberById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.params.userId as string;
-      await removeMemberById(userId, req.project, req.user!);
+      await removeMemberById(userId, req.project, req.user!._id);
       res.json({
         message: "Usuario eliminado correctamente",
         manager: req.user?.name,

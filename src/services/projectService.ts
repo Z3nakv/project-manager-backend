@@ -64,7 +64,7 @@ export const updateProject = async (project: IProject, body: CreateProject, user
   await project.save();
   const members = getProjectMembers(project);
   await notifyChangesToTeamSafely({
-    members: members as Array<{ _id: Types.ObjectId }>,
+    members: members,
     triggeredBy: user._id,
     projectId: project._id,
     taskId: null,
@@ -78,7 +78,7 @@ export const deleteProject = async (project: IProject, user: IUser) : Promise<vo
   await project.deleteOne();
   const members = getProjectMembers(project);
   await notifyChangesToTeamSafely({
-    members: members as Array<{ _id: Types.ObjectId }>,
+    members: members,
     triggeredBy: user._id,
     projectId: project._id,
     taskId: null,

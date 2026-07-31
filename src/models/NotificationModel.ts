@@ -27,9 +27,6 @@ export const notificationTypes = {
   NOTE_DELETED: "note_deleted"
 } as const;
 
-/* export type NotificationType =
-  (typeof notificationTypes)[keyof typeof notificationTypes]; */
-
 export type NotificationType = typeof notificationTypes[keyof typeof notificationTypes];
 
 const NotificationSchema = new Schema(

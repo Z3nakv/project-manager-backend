@@ -51,7 +51,6 @@ export const clearAll = async (userId: Types.ObjectId) : Promise<void> => {
 export const notifyChangesToTeam = async ({ 
   members, triggeredBy, projectId, taskId, actionType, content }: NotifyTaskStatusParams
 ) : Promise<void> => {
-
   const results = await Promise.allSettled(
     members
       .filter((memberId) => memberId?._id.toString() !== triggeredBy.toString())
@@ -66,7 +65,8 @@ export const notifyChangesToTeam = async ({
         }),
       ),
   );
-
+  
+  
   results.forEach((result) => {
     if (result.status === 'fulfilled' && result.value) {
       emitToUser(result.value.user!.toString(), "static_notification", result.value);
