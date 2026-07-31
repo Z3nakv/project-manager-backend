@@ -39,8 +39,8 @@ describe('suggestTasksForProject', () => {
       quantity: 2,
     });
 
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe('Tarea sugerida 1');
+    expect(result.tasks).toHaveLength(2);
+    expect(result.tasks[0].name).toBe('Tarea sugerida 1');
   });
 
   it('debe lanzar un error si la IA no devuelve output_text', async () => {

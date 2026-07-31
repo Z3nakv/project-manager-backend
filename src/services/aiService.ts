@@ -111,5 +111,5 @@ export async function suggestTasksForProject({
   }
 
   const raw = JSON.parse(interaction.output_text);
-  return raw;
+  return { tasks: raw};
 }

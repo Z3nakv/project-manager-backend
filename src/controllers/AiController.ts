@@ -16,7 +16,7 @@ export class AiTasksCreationController {
         quantity,
       });
 
-      res.json(suggestions);
+      res.json(suggestions.tasks);
     } catch (error) {
       next(error)
     }

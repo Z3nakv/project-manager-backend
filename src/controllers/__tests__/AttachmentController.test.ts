@@ -40,8 +40,9 @@ function getNextSpy() {
   return vi.fn() as unknown as NextFunction;
 }
 
-function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
-  return next.mock.calls[0][0] as AppError;
+function getErrorFromNext(next: NextFunction): AppError {
+  const mockNext = next as unknown as ReturnType<typeof vi.fn>;
+  return mockNext.mock.calls[0][0] as AppError;
 }
 
 async function setup() {
