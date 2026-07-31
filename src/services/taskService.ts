@@ -6,6 +6,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../utils/errors";
 import { IUser } from "../models/UserModel";
 import { getProjectMembers } from "../utils/projectHelpers";
 import { CreateTaskInput, UpdateTaskInput } from "../schemas/taskSchema";
+import { emitTaskAssigned, emitTaskCreated, emitTaskDeleted, emitTaskStatusUpdated, emitTaskUpdated } from "../socket/taskEvents";
 
 export const createTask = async (
   project: IProject,
@@ -26,29 +27,24 @@ export const createTask = async (
     actionType: "TASK_CREATED",
     content: `${triggeredByName} creó la tarea "${task.name}"`,
   });
+  emitTaskCreated(project, task.name, triggeredBy);
   return task;
 };
 
 export const getTasksByProject = async (projectId: Types.ObjectId) : Promise<ITask[]> => {
-  return Task.find({ project: projectId });
+  return Task.find({ project: projectId }).lean();
 };
 
 export const getTaskById = async (taskId: Types.ObjectId) : Promise<ITask> => {
   const task = await Task.findById(taskId)
     .populate({ path: "completedBy", populate: { path: "user" } })
+    .populate({ path: "project", populate: [{path:"team", select:"_id"},{path:"manager", select:"_id"}]})
     .populate({
       path: "notes",
       populate: { path: "createdBy", select: "_id email name" },
     })
-    .populate({
-      path: "project",
-      populate: [
-        { path: "team", select: "_id" },
-        { path: "manager", select: "_id" },
-      ],
-    })
-    .select("-assignedTo");
-
+    .select("-assignedTo")
+    .lean();
   if (!task) throw new NotFoundError("Tarea", taskId.toString());
   return task;
 };
@@ -74,6 +70,7 @@ export const updateTask = async (
     actionType: "TASK_UPDATED",
     content: `${user.name} actualizó la tarea "${task.name}"`,
   });
+  emitTaskUpdated(project, task.name, user._id,)
 };
 
 export const updateTaskStatus = async (
@@ -90,14 +87,16 @@ export const updateTaskStatus = async (
         await task.save();
   
         const members = getProjectMembers(project);
+        const notification = `${user.name} actualizó el estado de la tarea "${task.name}" del proyecto ${project.projectName} a "${status}"`;
         await notifyChangesToTeamSafely({
           members: members,
           triggeredBy: user!._id!,
           projectId: project._id!,
           taskId: task._id!,
           actionType: "TASK_STATUS_UPDATED",
-          content: `${user.name} actualizó el estado de la tarea "${task.name}" a "${status}"`,
+          content: notification,
         });
+  emitTaskStatusUpdated(project, user._id, notification)
 }
 
 export const deleteTask = async (
@@ -119,6 +118,7 @@ export const deleteTask = async (
     actionType: "TASK_DELETED",
     content: `${user!.name} eliminó la tarea "${task.name}"`,
   });
+  emitTaskDeleted(project, task.name, user._id);
 };
 
 export const assignTask = async (
@@ -149,15 +149,16 @@ export const assignTask = async (
   const assignedTaskMembers = members.filter((member) =>
     task.assignedTo.some((assignedId) => assignedId.equals(member!._id)),
   );
-
+  const notification = `${user.name} te asigno la tarea "${task.name}" del proyecto ${project.projectName}`
   await notifyChangesToTeamSafely({
     members: assignedTaskMembers,
     triggeredBy: user._id,
     projectId: project._id,
     taskId: task._id,
     actionType: "TASK_STATUS_UPDATED",
-    content: `${user.name} te asigno la tarea "${task.name}"`,
+    content: notification,
   });
+  emitTaskAssigned(project, user._id, notification)
 
   return task;
 };

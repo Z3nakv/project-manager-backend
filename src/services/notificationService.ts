@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 import Notification, { INotification, NotificationType, notificationTypes } from "../models/NotificationModel";
-import { io } from "../server";
 import { NotFoundError, UnauthorizedError } from "../utils/errors";
+import { emitToUser } from "../socket/notificationEmitter";
 
 type NotifyTaskStatusParams = {
   members: Array<{ _id: Types.ObjectId }>;
@@ -30,6 +30,7 @@ export const getNotifications = async (userId: Types.ObjectId) : Promise<INotifi
         .populate("triggeredBy", "name email")
         .populate('project', '_id')
         .populate('task', '_id')
+        .populate("user", "_id")
         .sort({ createdAt: -1 })
         .limit(20);
     return notifications;
@@ -68,7 +69,7 @@ export const notifyChangesToTeam = async ({
 
   results.forEach((result) => {
     if (result.status === 'fulfilled' && result.value) {
-      io.to(result.value.user!.toString()).emit('static_notification', result.value);
+      emitToUser(result.value.user!.toString(), "static_notification", result.value);
     } else if (result.status === 'rejected') {
       console.error('Error al crear notificación:', result.reason);
     }

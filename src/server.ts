@@ -15,7 +15,7 @@ import { errorHandler } from './middleware/errorHandler';
 import helmet from 'helmet';
 import { aiLimiter, apiLimiter } from './middleware/limiter';
 import cookieParser from 'cookie-parser';
-
+import morgan from 'morgan'
 configDotenv();
 
 const server = express();
@@ -24,13 +24,28 @@ const httpServer  = createServer(server);
 export const io = new Server(httpServer, {
     cors: {origin: process.env.FRONTEND_URL}
 });
-
+server.use(morgan('dev'));
 server.use(cookieParser());
 server.set("trust proxy", 1);
 server.use(cors({
     origin:process.env.FRONTEND_URL,
     credentials: true
 }));
+
+/* server.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", process.env.FRONTEND_URL, "ws://localhost:*"],
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+        scriptSrc: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // necesario para Cloudinary
+  })
+); */
+
 server.use(helmet());
 server.use("/api", apiLimiter);
 server.use("/api/projects", aiLimiter, aiRoutes);

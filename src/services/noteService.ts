@@ -7,6 +7,7 @@ import { io } from "../server";
 import { notifyChangesToTeamSafely } from "./notificationService";
 import { ConflictError, NotFoundError, UnauthorizedError } from "../utils/errors";
 import { getProjectMembers } from "../utils/projectHelpers";
+import { emitToProjectMembers } from "../socket/notificationEmitter";
 
 export const createNote = async (
   content: string,
@@ -25,24 +26,17 @@ export const createNote = async (
   await Promise.all([task.save(), note.save()]);
 
   const members = getProjectMembers(project);
-
+  const notifyContent = `${user.name} creó una nueva nota en la tarea "${task.name}"`;
       await notifyChangesToTeamSafely({
         members: members,
         triggeredBy: user._id,
         projectId: project._id,
         taskId: null,
         actionType: "NOTE_ADDED",
-        content: `${user.name} creó una nueva nota en la tarea "${task.name}"`,
+        content: notifyContent,
       });
 
-  members
-    .filter((member) => member?._id.toString() !== user._id.toString())
-    .forEach((member) => {
-      io.to(member!._id.toString()).emit("note_added", {
-        message: content,
-        projectId: project._id,
-      });
-    });
+  emitToProjectMembers(members, user._id, "note_added", {message: notifyContent, projectId: project._id});
 };
 
 export const getTaskNotes = async (taskId: Types.ObjectId) : Promise<INote[]> => {
@@ -62,7 +56,7 @@ export const deleteNote = async (noteId: string, task: ITask, user: IUser, proje
       await Promise.all([task.save(), note.deleteOne()]);
 
       const members = getProjectMembers(project);
-      const content = `${user!.name} eliminó la nota "${task.name}"`;
+      const notifyContent = `${user!.name} eliminó la nota "${task.name}"`;
 
       await notifyChangesToTeamSafely({
         members: members,
@@ -70,17 +64,10 @@ export const deleteNote = async (noteId: string, task: ITask, user: IUser, proje
         projectId: project._id,
         taskId: null,
         actionType: "NOTE_DELETED",
-        content: content,
+        content: notifyContent,
       });
 
-      members
-        .filter((member) => member?._id.toString() !== user._id.toString())
-        .forEach((member) => {
-          io.to(member!._id.toString()).emit("note_deleted", {
-            message: content,
-            projectId: project._id,
-          });
-        });
+      emitToProjectMembers(members, user._id, "note_deleted", {message: notifyContent, projectId: project._id});
 }
 
 export const updateNoteStatus = async (noteId: string) : Promise<void> => {
