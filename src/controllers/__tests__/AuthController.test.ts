@@ -32,6 +32,8 @@ function mockRes() {
     status: vi.fn().mockReturnThis(),
     json: vi.fn(),
     send: vi.fn(),
+    cookie: vi.fn().mockReturnThis(),
+    clearCookie: vi.fn().mockReturnThis(),
   } as unknown as Response;
 }
 
@@ -199,7 +201,7 @@ describe("AuthController", () => {
 
       await AuthController.login(req, res, next);
 
-      expect(res.json).toHaveBeenCalledWith(expect.any(String));
+      expect(res.json).toHaveBeenCalledWith({ accessToken: expect.any(String)});
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -693,7 +695,8 @@ describe("AuthController", () => {
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          token: expect.any(String),
+          accessToken: expect.any(String),
+          user: expect.objectContaining({ email: "nuevo-google@test.com" }),
         }),
       );
       expect(next).not.toHaveBeenCalled();

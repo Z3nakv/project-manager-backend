@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { ProjectController } from '../ProjectController';
 import Project from '../../models/ProjectModel';
 import User from '../../models/UserModel';
@@ -20,7 +20,7 @@ function mockRes() {
 }
 
 function getNextSpy() {
-  return vi.fn() as unknown as NextFunction;
+  return vi.fn();
 }
 
 function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {

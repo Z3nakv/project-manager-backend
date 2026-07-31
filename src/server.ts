@@ -16,14 +16,16 @@ import helmet from 'helmet';
 import { aiLimiter, apiLimiter } from './middleware/limiter';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan'
+import { setIO } from './socket/socketInstance';
 configDotenv();
 
 const server = express();
 
 const httpServer  = createServer(server);
-export const io = new Server(httpServer, {
+const io = new Server(httpServer, {
     cors: {origin: process.env.FRONTEND_URL}
 });
+setIO(io);
 server.use(morgan('dev'));
 server.use(cookieParser());
 server.set("trust proxy", 1);

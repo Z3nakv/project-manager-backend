@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Types } from 'mongoose';
 import * as notificationService from '../notificationService';
@@ -9,6 +8,11 @@ vi.mock('../../server', () => ({
     to: vi.fn().mockReturnThis(),
     emit: vi.fn(),
   },
+}));
+
+vi.mock("../../socket/notificationEmitter", () => ({
+  emitToUser: vi.fn(),
+  emitToProjectMembers: vi.fn(),
 }));
 
 describe('notifyChangesToTeam', () => {

@@ -58,7 +58,7 @@ export const updateTask = async (
   task.name = body.name;
   task.description = body.description;
   task.deadline = body.deadline ?? task.deadline;
-  task.labels = body.labels;
+  task.labels = body.labels ?? task.labels;
   await task.save();
 
   const members = getProjectMembers(project);

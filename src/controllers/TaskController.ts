@@ -13,14 +13,7 @@ export class TaskController {
   static createTask = async (req: Request, res: Response, next: NextFunction) => {
     try {
       await createTask(req.project, req.body, req.user!._id, req.user!.name);
-      res.json({
-        message: "Tarea creada correctamente",
-        project: {
-          projectName: req.project.projectName,
-          projectTeam: req.project.team,
-          projectId: req.project._id,
-        },
-      });
+      res.json({message: "Tarea creada correctamente"});
     } catch (error) {
       next(error);
     }
@@ -54,8 +47,6 @@ export class TaskController {
       await updateTask(req.task, req.project, req.user!, req.body);
       res.json({
         message: "Tarea Actualizada Correctamente",
-        project: { projectTeam: req.project.team, projectId: req.project._id },
-        taskName: req.task.name,
       });
     } catch (error) {
       next(error);

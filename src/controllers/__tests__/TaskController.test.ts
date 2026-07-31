@@ -1,4 +1,3 @@
-// src/controllers/__tests__/TaskController.test.ts
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import { TaskController } from '../TaskController';
@@ -13,6 +12,14 @@ vi.mock('../../services/notificationService', () => ({
   notifyChangesToTeamSafely: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../../socket/taskEvents", () => ({
+  emitTaskCreated: vi.fn(),
+  emitTaskUpdated: vi.fn(),
+  emitTaskDeleted: vi.fn(),
+  emitTaskStatusUpdated: vi.fn(),
+  emitTaskAssigned: vi.fn(),
+}));
+
 function mockRes() {
   return {
     status: vi.fn().mockReturnThis(),
@@ -25,8 +32,9 @@ function getNextSpy() {
   return vi.fn() as unknown as NextFunction;
 }
 
-function getErrorFromNext(next: ReturnType<typeof vi.fn>): AppError {
-  return next.mock.calls[0][0] as AppError;
+function getErrorFromNext(next: NextFunction): AppError {
+  const mockNext = next as unknown as ReturnType<typeof vi.fn>;
+  return mockNext.mock.calls[0][0] as AppError;
 }
 
 async function createProjectWithTeam() {

@@ -1,8 +1,8 @@
-import { io } from "../server";
 import { Types } from "mongoose";
+import { getIO } from "./socketInstance";
 
 export const emitToUser = (userId: Types.ObjectId | string, event: string, data: unknown) => {
-  io.to(userId.toString()).emit(event, data);
+  getIO().to(userId.toString()).emit(event, data);
 };
 
 type MemberWithId = { _id: Types.ObjectId };

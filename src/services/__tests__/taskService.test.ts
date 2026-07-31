@@ -17,7 +17,9 @@ describe("getTasksByProject", () => {
   });
   it("llama a Task.find con el projectId correcto", async () => {
     const mockTasks = [{ _id: "1", name: "Tarea 1" }];
-    ;(Task.find as any).mockReturnValue(mockTasks);
+    (Task.find as any).mockReturnValue({
+    lean: vi.fn().mockResolvedValue(mockTasks),
+  });
 
     const projectId = new Types.ObjectId("507f1f77bcf86cd799439011");
     const result = await getTasksByProject(projectId);
