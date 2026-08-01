@@ -17,6 +17,7 @@ import { aiLimiter, apiLimiter } from './middleware/limiter';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan'
 import { setIO } from './socket/socketInstance';
+import healthRoutes from './routes/healthRoutes';
 configDotenv();
 
 const server = express();
@@ -49,9 +50,10 @@ server.use(cors({
 ); */
 
 server.use(helmet());
+server.use("/health", healthRoutes);
 server.use("/api", apiLimiter);
 server.use("/api/projects", aiLimiter, aiRoutes);
-
+console.log('NODE_ENV:', process.env.NODE_ENV);
 
 server.use(express.json());
 
