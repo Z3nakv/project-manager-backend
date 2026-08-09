@@ -39,7 +39,7 @@ export const emitTaskAssigned = (project:IProject, triggeredBy:Types.ObjectId, n
     emitToProjectMembers(
         getProjectMembers(project),
         triggeredBy,
-        "task_deleted_notification",
+        "assigned_task_notification",
         {message: notification, 
         projectId: project._id}
     )

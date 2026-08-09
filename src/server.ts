@@ -53,7 +53,6 @@ server.use(helmet());
 server.use("/health", healthRoutes);
 server.use("/api", apiLimiter);
 server.use("/api/projects", aiLimiter, aiRoutes);
-console.log('NODE_ENV:', process.env.NODE_ENV);
 
 server.use(express.json());
 
