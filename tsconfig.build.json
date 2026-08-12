@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "dist",
+    "node_modules",
+    "vitest.config.ts",
+    "**/__tests__/**"
+  ]
+}
