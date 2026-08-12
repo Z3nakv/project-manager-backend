@@ -22,18 +22,33 @@ configDotenv();
 
 const server = express();
 
+const allowedOrigins : string[] = [
+  process.env.FRONTEND_URL, // producción
+  "http://localhost:5173", // desarrollo local
+].filter((origin): origin is string => Boolean(origin));
+
 const httpServer  = createServer(server);
 const io = new Server(httpServer, {
-    cors: {origin: process.env.FRONTEND_URL}
+    cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
 });
 setIO(io);
 server.use(morgan('dev'));
 server.use(cookieParser());
 server.set("trust proxy", 1);
 server.use(cors({
-    origin:process.env.FRONTEND_URL,
-    credentials: true
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("No permitido por CORS"));
+    }
+  },
+  credentials: true,
 }));
+server.use(express.json());
 
 /* server.use(
   helmet({
@@ -51,18 +66,14 @@ server.use(cors({
 
 server.use(helmet());
 server.use("/health", healthRoutes);
-server.use("/api", apiLimiter);
-server.use("/api/projects", 
-  aiLimiter,
-  aiRoutes);
 
-server.use(express.json());
+server.use("/api", apiLimiter);
+server.use("/api/projects", aiLimiter, aiRoutes);
 
 server.use('/api/notifications', notificationsRoute);
 server.use('/api/auth', authRouter);
 server.use('/api/projects', projectRouter);
 server.use('/api/projects', attachmentRouter);
-server.use('/api/projects', aiRoutes);
 
 server.use(errorHandler);
 //Docs
