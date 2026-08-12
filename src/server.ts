@@ -51,9 +51,9 @@ server.use(cors({
 
 server.use(helmet());
 server.use("/health", healthRoutes);
-/* server.use("/api", apiLimiter); */
+server.use("/api", apiLimiter);
 server.use("/api/projects", 
-  /* aiLimiter, */
+  aiLimiter,
   aiRoutes);
 
 server.use(express.json());
