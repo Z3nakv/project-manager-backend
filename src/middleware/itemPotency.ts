@@ -9,7 +9,7 @@ export const idempotencyMiddleware = async (req: Request, res: Response, next: N
     // create() falla si `key` ya existe (índice único) — esto es lo que resuelve
     // la condición de carrera de forma atómica, sin ventana de tiempo entre check y set
     await IdempotencyKey.create({ key });
-  } catch (err: unknown) {
+  } catch {
     // Índice duplicado = ya se está procesando o ya se procesó esta key
     const existing = await IdempotencyKey.findOne({ key });
 
