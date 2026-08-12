@@ -4,5 +4,6 @@
     "src/**/*",
     "vitest.config.ts",
     "eslint.config.js"
-  ]
+  ],
+  "exclude": []
 }
