@@ -3,14 +3,14 @@ import { body, param } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
 import { AuthController } from "../controllers/AuthController";
 import { authenticate } from "../middleware/auth";
-import { idemPotencyMiddleware } from "../middleware/itemPotency";
 import { authLimiter, registerLimiter } from "../middleware/limiter";
 import { validate } from "../middleware/validate";
 import { loginSchema } from "../schemas/authSchema";
+import { idempotencyMiddleware } from "../middleware/itemPotency";
 
 const router = Router();
 
-router.use(idemPotencyMiddleware);
+router.use(idempotencyMiddleware);
 
 /**
  * @openapi

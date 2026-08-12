@@ -8,15 +8,15 @@ import { hasProjectAccess, projectExists } from "../middleware/project";
 import { hasAuthorization, taskExists } from "../middleware/task";
 import { authenticate } from "../middleware/auth";
 import { TeamMemberController } from "../controllers/TeamController";
-import { idemPotencyMiddleware } from "../middleware/itemPotency";
 import { validate } from "../middleware/validate";
 import { CreateProjectSchema } from "../schemas/projectSchema";
+import { idempotencyMiddleware } from "../middleware/itemPotency";
 
 
 const router = Router();
 
 router.use(authenticate);
-router.use(idemPotencyMiddleware);
+router.use(idempotencyMiddleware);
 
 /**
  * @openapi

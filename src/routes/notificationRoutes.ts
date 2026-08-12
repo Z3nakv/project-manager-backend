@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth";
 import { NotificationController } from "../controllers/NotificationController";
-import { idemPotencyMiddleware } from "../middleware/itemPotency";
+import { idempotencyMiddleware } from "../middleware/itemPotency";
 
 const router = Router();
 
-router.use(idemPotencyMiddleware);
+router.use(idempotencyMiddleware);
 
 // routes/notificationRoutes.ts
 
