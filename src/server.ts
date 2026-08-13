@@ -19,6 +19,7 @@ import morgan from 'morgan'
 import { setIO } from './socket/socketInstance';
 import healthRoutes from './routes/healthRoutes';
 import reseedDemoData from './scripts/reseedDemo';
+import { cleanupStaleDemoSessions } from './scripts/cleanupStaleDemoSessions';
 configDotenv();
 
 const server = express();
@@ -69,10 +70,10 @@ server.use(helmet());
 
 if (process.env.NODE_ENV === "production") {
   setInterval(() => {
-    reseedDemoData().catch((error) => {
+    cleanupStaleDemoSessions().catch((error) => {
       console.error("Error reseeding demo data:", error);
     });
-  }, 6 * 60 * 60 * 1000);
+  }, 30 * 60 * 1000);
 }
 
 server.use("/health", healthRoutes);

@@ -6,7 +6,8 @@ export interface IUser extends Document {
     name: string,
     confirmed: boolean,
     authProvider: 'local' | 'google'
-    googleId?: string
+    googleId?: string,
+    isEphemeralDemo: boolean
 }
 
 const userSchema : Schema = new Schema ({
@@ -41,8 +42,17 @@ const userSchema : Schema = new Schema ({
     confirmed: {
         type: Boolean,
         default: false
-    }
-})
+    },
+    isEphemeralDemo: {
+        type: Boolean,
+        default: false
+    },
+}, {timestamps: true});
+
+userSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 2 * 60 * 60, partialFilterExpression: { isEphemeralDemo: true } }
+);
 
 const User = mongoose.model<IUser>('User', userSchema);
 export default User;

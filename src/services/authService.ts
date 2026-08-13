@@ -14,6 +14,9 @@ import {
 import z from "zod";
 import { CreateAccountInput, GoogleAuthResponse, LoginInput, UpdatePasswordInput, UpdateProfileInput } from "../schemas/authSchema";
 import jwt from "jsonwebtoken";
+import Project from "../models/ProjectModel";
+import Task from "../models/TaskModel";
+import bcrypt from 'bcrypt';
 
 const googleUserInfoSchema = z.object({
   email: z.string(),
@@ -293,23 +296,52 @@ export const googleAuth = async (googleToken: string) : Promise<GoogleAuthRespon
   return { user, accessToken, refreshToken };
 };
 
+
+const DEMO_SEED_DATA = {
+  project: {
+    projectName: "Ecommerce NIKE - Demo",
+    clientName: "Nike Inc.",
+    description: "Rediseño completo de la plataforma de e-commerce.",
+  },
+  tasks: [
+    { name: "Implementar pasarela de pagos internacionales", status: "pending" },
+    { name: "Optimización del flujo de selección de tallas", status: "pending" },
+    { name: "Implementar buscador predictivo con filtros avanzados", status: "inProgress" },
+  ],
+};
+
 export const demoLogin = async (): Promise<{ accessToken: string; refreshToken: string }> => {
-  const demoUserId = process.env.DEMO_USER_ID;
-  console.log({demoUserId});
-  
-  if (!demoUserId) {
-    throw new AuthenticationError("La cuenta demo no está configurada");
-  }
+  const ephemeralUser = await User.create({
+    name: "Visitante Demo",
+    email: `demo-${Date.now()}-${crypto.randomUUID().slice(0, 8)}@treework.demo`,
+    password: await bcrypt.hash(crypto.randomUUID(), 10),
+    confirmed: true,
+    isEphemeralDemo: true,
+  });
 
-  const user = await User.findById(demoUserId);
-  console.log({user});
-  
-  if (!user) {
-    throw new AuthenticationError("La cuenta demo no está disponible");
-  }
+  const project = await Project.create({
+    ...DEMO_SEED_DATA.project,
+    manager: ephemeralUser._id,
+  });
 
-  const accessToken = generateAccessToken({ id: user._id });
-  const refreshToken = generateRefreshToken({ id: user._id });
+  await Task.insertMany(
+    DEMO_SEED_DATA.tasks.map((task) => ({
+      ...task,
+      project: project._id,
+    }))
+  );
+
+  const accessToken = generateAccessToken({ id: ephemeralUser._id });
+  const refreshToken = generateRefreshToken({ id: ephemeralUser._id });
 
   return { accessToken, refreshToken };
+};
+
+export const cleanupEphemeralDemoUser = async (userId: Types.ObjectId) => {
+  const projects = await Project.find({ manager: userId });
+  const projectIds = projects.map((p) => p._id);
+
+  await Task.deleteMany({ project: { $in: projectIds } });
+  await Project.deleteMany({ manager: userId });
+  await User.deleteOne({ _id: userId, isEphemeralDemo: true }); 
 };

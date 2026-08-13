@@ -1,5 +1,5 @@
 ﻿import { Request, Response, NextFunction } from "express";
-import { checkPasswordService, confirmAccount, createAccount, demoLogin, forgotPassword, getUser, googleAuth, login, refreshAccessToken, requestConfirmationCode, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
+import { checkPasswordService, cleanupEphemeralDemoUser, confirmAccount, createAccount, demoLogin, forgotPassword, getUser, googleAuth, login, refreshAccessToken, requestConfirmationCode, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
 
 export class AuthController {
   static createAccount = async (
@@ -66,6 +66,9 @@ export class AuthController {
 
   static logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (req.user?.isEphemeralDemo) {
+      await cleanupEphemeralDemoUser(req.user._id);
+      } 
       res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -237,7 +240,7 @@ export class AuthController {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000, // sesión demo más corta: 1 día en vez de 7
+        maxAge: 24 * 60 * 60 * 1000,
       })
       res.json({ accessToken });
     } catch (error) {
