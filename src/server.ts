@@ -18,6 +18,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan'
 import { setIO } from './socket/socketInstance';
 import healthRoutes from './routes/healthRoutes';
+import reseedDemoData from './scripts/reseedDemo';
 configDotenv();
 
 const server = express();
@@ -65,10 +66,19 @@ server.use(express.json());
 ); */
 
 server.use(helmet());
+
+if (process.env.NODE_ENV === "production") {
+  setInterval(() => {
+    reseedDemoData().catch((error) => {
+      console.error("Error reseeding demo data:", error);
+    });
+  }, 6 * 60 * 60 * 1000);
+}
+
 server.use("/health", healthRoutes);
 
 server.use("/api", apiLimiter);
-server.use("/api/projects", aiLimiter, aiRoutes);
+server.use("/api/projects/:projectId/ai", aiLimiter, aiRoutes);
 
 server.use('/api/notifications', notificationsRoute);
 server.use('/api/auth', authRouter);
@@ -76,7 +86,7 @@ server.use('/api/projects', projectRouter);
 server.use('/api/projects', attachmentRouter);
 
 server.use(errorHandler);
-//Docs
+
 server.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 setupSocket(io);

@@ -35,3 +35,9 @@ export const registerLimiter = rateLimit({
     error: "Demasiados intentos de registro. Intenta nuevamente más tarde."
   }
 });
+
+export const demoLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // máximo 10 intentos de demo cada 15 min por IP
+  message: { error: "Demasiados intentos, intenta más tarde" },
+});

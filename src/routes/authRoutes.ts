@@ -3,7 +3,7 @@ import { body, param } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
 import { AuthController } from "../controllers/AuthController";
 import { authenticate } from "../middleware/auth";
-import { authLimiter, registerLimiter } from "../middleware/limiter";
+import { authLimiter, demoLoginLimiter, registerLimiter } from "../middleware/limiter";
 import { validate } from "../middleware/validate";
 import { loginSchema } from "../schemas/authSchema";
 import { idempotencyMiddleware } from "../middleware/itemPotency";
@@ -150,7 +150,7 @@ router.post("/refresh-token", AuthController.refreshToken);
 
 router.post("/logout", AuthController.logout);
 
-;/**
+/**
  * @openapi
  * /auth/request-code:
  *   post:
@@ -510,6 +510,8 @@ router.post('/google',
     .notEmpty().withMessage('El token de Google es obligatorio'),
     handleInputErrors,
     AuthController.googleAuth
-)
+);
+
+router.post("/demo-login", demoLoginLimiter, AuthController.demoLogin);
 
 export default router;

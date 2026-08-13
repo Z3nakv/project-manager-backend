@@ -292,3 +292,24 @@ export const googleAuth = async (googleToken: string) : Promise<GoogleAuthRespon
 
   return { user, accessToken, refreshToken };
 };
+
+export const demoLogin = async (): Promise<{ accessToken: string; refreshToken: string }> => {
+  const demoUserId = process.env.DEMO_USER_ID;
+  console.log({demoUserId});
+  
+  if (!demoUserId) {
+    throw new AuthenticationError("La cuenta demo no está configurada");
+  }
+
+  const user = await User.findById(demoUserId);
+  console.log({user});
+  
+  if (!user) {
+    throw new AuthenticationError("La cuenta demo no está disponible");
+  }
+
+  const accessToken = generateAccessToken({ id: user._id });
+  const refreshToken = generateRefreshToken({ id: user._id });
+
+  return { accessToken, refreshToken };
+};

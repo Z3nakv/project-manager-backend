@@ -1,5 +1,5 @@
 ﻿import { Request, Response, NextFunction } from "express";
-import { checkPasswordService, confirmAccount, createAccount, forgotPassword, getUser, googleAuth, login, refreshAccessToken, requestConfirmationCode, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
+import { checkPasswordService, confirmAccount, createAccount, demoLogin, forgotPassword, getUser, googleAuth, login, refreshAccessToken, requestConfirmationCode, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
 
 export class AuthController {
   static createAccount = async (
@@ -220,6 +220,26 @@ export class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000
       })
       res.json({ user, accessToken });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  static demoLogin = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { accessToken, refreshToken } = await demoLogin();
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000, // sesión demo más corta: 1 día en vez de 7
+      })
+      res.json({ accessToken });
     } catch (error) {
       next(error);
     }
