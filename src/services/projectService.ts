@@ -47,6 +47,7 @@ export const getProjectById = async (projectId: string) : Promise<IProject> => {
     .lean();
     
   if (!project) throw new NotFoundError("Project", projectId);
+  
   return project;
 };
 
