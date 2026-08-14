@@ -2,6 +2,9 @@ import { Types } from "mongoose"
 import { IProject } from "../models/ProjectModel"
 import { emitToProjectMembers } from "./notificationEmitter"
 import { getProjectMembers } from "../utils/projectHelpers"
+import { truncate } from "../utils/truncate"
+
+
 
 export const emitTaskCreated = (project: IProject, taskName: string, triggeredBy: Types.ObjectId) => {
     emitToProjectMembers(
@@ -9,7 +12,7 @@ export const emitTaskCreated = (project: IProject, taskName: string, triggeredBy
         triggeredBy,
         "task_created_notification",
         {
-            message: `Se ha creado la tarea ${taskName} en el proyecto ${project.projectName}`,
+            message: `Se ha creado la tarea ${truncate(taskName)} en el proyecto ${truncate(project.projectName)}`,
             projectId: project._id
         }
     )
@@ -20,7 +23,7 @@ export const emitTaskUpdated = (project:IProject, taskName:string, triggeredBy:T
         getProjectMembers(project),
         triggeredBy,
         "task_updated_notification",
-        {message: `Se ha actualizado la tarea ${taskName}`, 
+        {message: `Se ha actualizado la tarea ${truncate(taskName)}`, 
         projectId: project._id}
     )
 }
@@ -30,27 +33,27 @@ export const emitTaskDeleted = (project:IProject, taskName:string, triggeredBy:T
         getProjectMembers(project),
         triggeredBy,
         "task_deleted_notification",
-        {message: `Se elimino la tarea ${taskName} del proyecto ${project.projectName}`, 
+        {message: `Se elimino la tarea ${truncate(taskName)} del proyecto ${truncate(project.projectName)}`, 
         projectId: project._id}
     )
 }
 
-export const emitTaskAssigned = (project:IProject, triggeredBy:Types.ObjectId, notification: string) => {
+export const emitTaskAssigned = (project:IProject, triggeredBy:Types.ObjectId) => {
     emitToProjectMembers(
         getProjectMembers(project),
         triggeredBy,
         "assigned_task_notification",
-        {message: notification, 
+        {message: "Tarea asignada", 
         projectId: project._id}
     )
 }
 
-export const emitTaskStatusUpdated = (project:IProject, triggeredBy:Types.ObjectId, notification: string) => {
+export const emitTaskStatusUpdated = (project:IProject, triggeredBy:Types.ObjectId) => {
     emitToProjectMembers(
         getProjectMembers(project),
         triggeredBy,
         "task_status_updated_notification",
-        {message: notification, 
+        {message: "Estado de tarea actualizado", 
         projectId: project._id}
     )
 }

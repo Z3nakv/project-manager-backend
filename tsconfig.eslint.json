@@ -3,7 +3,8 @@
   "include": [
     "src/**/*",
     "vitest.config.ts",
-    "eslint.config.js"
+    "eslint.config.js",
+    "seed/**/*.ts"
   ],
   "exclude": []
 }

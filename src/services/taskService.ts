@@ -96,7 +96,7 @@ export const updateTaskStatus = async (
           actionType: "TASK_STATUS_UPDATED",
           content: notification,
         });
-  emitTaskStatusUpdated(project, user._id, notification)
+  emitTaskStatusUpdated(project, user._id)
 }
 
 export const deleteTask = async (
@@ -158,7 +158,7 @@ export const assignTask = async (
     actionType: "TASK_STATUS_UPDATED",
     content: notification,
   });
-  emitTaskAssigned(project, user._id, notification)
+  emitTaskAssigned(project, user._id)
 
   return task;
 };
