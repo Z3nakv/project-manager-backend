@@ -12,11 +12,18 @@ import {
   ValidationError,
 } from "../utils/errors";
 import z from "zod";
-import { CreateAccountInput, GoogleAuthResponse, LoginInput, UpdatePasswordInput, UpdateProfileInput } from "../schemas/authSchema";
+import {
+  CreateAccountInput,
+  GoogleAuthResponse,
+  LoginInput,
+  UpdatePasswordInput,
+  UpdateProfileInput,
+} from "../schemas/authSchema";
 import jwt from "jsonwebtoken";
 import Project from "../models/ProjectModel";
 import Task from "../models/TaskModel";
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
+import { getDemoSeedData } from "./demoSeedData";
 
 const googleUserInfoSchema = z.object({
   email: z.string(),
@@ -45,7 +52,9 @@ async function findUserByEmailOrThrow(email: string) {
 
 /* ──────────── MÉTODOS PÚBLICOS ──────────── */
 
-export const createAccount = async (data: CreateAccountInput) : Promise<void> => {
+export const createAccount = async (
+  data: CreateAccountInput,
+): Promise<void> => {
   const { name, email, password } = data;
 
   const userExists = await User.findOne({ email });
@@ -71,7 +80,7 @@ export const createAccount = async (data: CreateAccountInput) : Promise<void> =>
   }
 };
 
-export const confirmAccount = async (tokenValue: string) : Promise<void> => {
+export const confirmAccount = async (tokenValue: string): Promise<void> => {
   const tokenDoc = await findTokenOrThrow(tokenValue);
 
   const user = await User.findById(tokenDoc.user);
@@ -81,8 +90,10 @@ export const confirmAccount = async (tokenValue: string) : Promise<void> => {
   await Promise.all([user.save(), tokenDoc.deleteOne()]);
 };
 
-export const login = async ({email, password} : LoginInput) 
-: Promise<{accessToken:string, refreshToken:string}> => {
+export const login = async ({
+  email,
+  password,
+}: LoginInput): Promise<{ accessToken: string; refreshToken: string }> => {
   const user = await findUserByEmailOrThrow(email);
 
   if (!user.confirmed) {
@@ -115,15 +126,17 @@ export const login = async ({email, password} : LoginInput)
   return { accessToken, refreshToken };
 };
 
-export const refreshAccessToken = async (refreshToken: string): Promise<string> => {
-
-  if (!refreshToken) throw new AuthenticationError("Refresh token no proporcionado");
+export const refreshAccessToken = async (
+  refreshToken: string,
+): Promise<string> => {
+  if (!refreshToken)
+    throw new AuthenticationError("Refresh token no proporcionado");
 
   let decoded;
   try {
     decoded = jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET!);
   } catch (error) {
-    console.error(error)
+    console.error(error);
     throw new AuthenticationError("Refresh token inválido o expirado");
   }
 
@@ -135,7 +148,7 @@ export const refreshAccessToken = async (refreshToken: string): Promise<string> 
   return generateAccessToken({ id: user._id });
 };
 
-export const requestConfirmationCode = async (email: string) : Promise<void> => {
+export const requestConfirmationCode = async (email: string): Promise<void> => {
   const user = await findUserByEmailOrThrow(email);
 
   if (user.confirmed) throw new ConflictError("El usuario ya esta confirmado!");
@@ -157,7 +170,7 @@ export const requestConfirmationCode = async (email: string) : Promise<void> => 
   }
 };
 
-export const forgotPassword = async (email: string) : Promise<void> => {
+export const forgotPassword = async (email: string): Promise<void> => {
   const user = await findUserByEmailOrThrow(email);
 
   const token = new Token();
@@ -176,14 +189,14 @@ export const forgotPassword = async (email: string) : Promise<void> => {
   }
 };
 
-export const validateToken = async (tokenValue: string) : Promise<void> => {
+export const validateToken = async (tokenValue: string): Promise<void> => {
   await findTokenOrThrow(tokenValue);
 };
 
 export const updatePasswordWithToken = async (
   tokenValue: string,
   password: string,
-) : Promise<void> => {
+): Promise<void> => {
   const tokenDoc = await findTokenOrThrow(tokenValue);
 
   const user = await findUserByIdOrThrow(tokenDoc.user);
@@ -192,18 +205,19 @@ export const updatePasswordWithToken = async (
   await Promise.all([user.save(), tokenDoc.deleteOne()]);
 };
 
-export const getUser = (user: IUser) : IUser => {
+export const getUser = (user: IUser): IUser => {
   return user;
 };
 
 export const updateProfile = async (
   user: IUser,
   data: UpdateProfileInput,
-) : Promise<void> => {
+): Promise<void> => {
   const { name, email } = data;
 
   const userExists = await User.findOne({ email });
-  if (userExists && !userExists._id.equals(user._id)) throw new ConflictError("El email ya esta registrado");
+  if (userExists && !userExists._id.equals(user._id))
+    throw new ConflictError("El email ya esta registrado");
 
   user.name = name;
   user.email = email;
@@ -212,9 +226,8 @@ export const updateProfile = async (
 
 export const updateCurrentUserPassword = async (
   userId: Types.ObjectId,
-  {current_password,
-  password} : UpdatePasswordInput
-) : Promise<void> => {
+  { current_password, password }: UpdatePasswordInput,
+): Promise<void> => {
   const user = await findUserByIdOrThrow(userId);
 
   if (!user.password) {
@@ -223,7 +236,10 @@ export const updateCurrentUserPassword = async (
     );
   }
 
-  const isPasswordCorrect = await checkPassword(current_password, user.password);
+  const isPasswordCorrect = await checkPassword(
+    current_password,
+    user.password,
+  );
   if (!isPasswordCorrect) {
     throw new AuthenticationError("El password actual es incorrecto!");
   }
@@ -235,7 +251,7 @@ export const updateCurrentUserPassword = async (
 export const checkPasswordService = async (
   userId: Types.ObjectId,
   password: string,
-) : Promise<void> => {
+): Promise<void> => {
   const user = await findUserByIdOrThrow(userId);
 
   const isPasswordCorrect = await checkPassword(password, user.password);
@@ -244,8 +260,9 @@ export const checkPasswordService = async (
   }
 };
 
-
-export const googleAuth = async (googleToken: string) : Promise<GoogleAuthResponse> => {
+export const googleAuth = async (
+  googleToken: string,
+): Promise<GoogleAuthResponse> => {
   const response = await fetch(
     "https://www.googleapis.com/oauth2/v3/userinfo",
     {
@@ -262,7 +279,7 @@ export const googleAuth = async (googleToken: string) : Promise<GoogleAuthRespon
   const rawPayload = await response.json();
   const result = googleUserInfoSchema.safeParse(rawPayload);
 
-   if (!result.success) {
+  if (!result.success) {
     throw new ValidationError("Respuesta inválida de Google");
   }
 
@@ -296,21 +313,10 @@ export const googleAuth = async (googleToken: string) : Promise<GoogleAuthRespon
   return { user, accessToken, refreshToken };
 };
 
-
-const DEMO_SEED_DATA = {
-  project: {
-    projectName: "Ecommerce NIKE - Demo",
-    clientName: "Nike Inc.",
-    description: "Rediseño completo de la plataforma de e-commerce.",
-  },
-  tasks: [
-    { name: "Implementar pasarela de pagos internacionales", status: "pending" },
-    { name: "Optimización del flujo de selección de tallas", status: "pending" },
-    { name: "Implementar buscador predictivo con filtros avanzados", status: "inProgress" },
-  ],
-};
-
-export const demoLogin = async (): Promise<{ accessToken: string; refreshToken: string }> => {
+export const demoLogin = async (): Promise<{
+  accessToken: string;
+  refreshToken: string;
+}> => {
   const ephemeralUser = await User.create({
     name: "Visitante Demo",
     email: `demo-${Date.now()}-${crypto.randomUUID().slice(0, 8)}@treework.demo`,
@@ -319,17 +325,32 @@ export const demoLogin = async (): Promise<{ accessToken: string; refreshToken: 
     isEphemeralDemo: true,
   });
 
-  const project = await Project.create({
-    ...DEMO_SEED_DATA.project,
-    manager: ephemeralUser._id,
-  });
+  const seedData = getDemoSeedData();
 
-  await Task.insertMany(
-    DEMO_SEED_DATA.tasks.map((task) => ({
-      ...task,
-      project: project._id,
-    }))
-  );
+  for (const projectSeed of seedData) {
+    const project = new Project({
+      projectName: projectSeed.projectName,
+      clientName: projectSeed.clientName,
+      description: projectSeed.description,
+      manager: ephemeralUser._id,
+    });
+
+    for (const taskSeed of projectSeed.tasks) {
+      const task = new Task({
+        name: taskSeed.name,
+        description: taskSeed.description,
+        status: taskSeed.status,
+        labels: taskSeed.labels ?? [],
+        deadline: taskSeed.deadline ?? null,
+        project: project._id,
+      });
+
+      project.tasks.push(task._id);
+      await task.save();
+    }
+
+    await project.save();
+  }
 
   const accessToken = generateAccessToken({ id: ephemeralUser._id });
   const refreshToken = generateRefreshToken({ id: ephemeralUser._id });
@@ -343,5 +364,5 @@ export const cleanupEphemeralDemoUser = async (userId: Types.ObjectId) => {
 
   await Task.deleteMany({ project: { $in: projectIds } });
   await Project.deleteMany({ manager: userId });
-  await User.deleteOne({ _id: userId, isEphemeralDemo: true }); 
+  await User.deleteOne({ _id: userId, isEphemeralDemo: true });
 };

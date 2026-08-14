@@ -18,7 +18,6 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan'
 import { setIO } from './socket/socketInstance';
 import healthRoutes from './routes/healthRoutes';
-import reseedDemoData from './scripts/reseedDemo';
 import { cleanupStaleDemoSessions } from './scripts/cleanupStaleDemoSessions';
 configDotenv();
 

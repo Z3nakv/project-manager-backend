@@ -45,7 +45,7 @@ export const getProjectById = async (projectId: string) : Promise<IProject> => {
     .populate({path: "manager", select: "_id name avatar"})
     .populate({path: "team", select: "_id name avatar"})
     .lean();
-
+    
   if (!project) throw new NotFoundError("Project", projectId);
   return project;
 };
