@@ -7,7 +7,9 @@ export interface IUser extends Document {
     confirmed: boolean,
     authProvider: 'local' | 'google'
     googleId?: string,
-    isEphemeralDemo: boolean
+    isEphemeralDemo: boolean,
+    avatarUrl?: string,
+    avatarPublicId?: string
 }
 
 const userSchema : Schema = new Schema ({
@@ -47,6 +49,14 @@ const userSchema : Schema = new Schema ({
         type: Boolean,
         default: false
     },
+    avatarUrl: {
+        type: String,
+        default: null
+    },
+    avatarPublicId: {
+        type: String,
+        default: null
+    }
 }, {timestamps: true});
 
 userSchema.index(

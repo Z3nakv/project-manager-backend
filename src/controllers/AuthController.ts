@@ -1,5 +1,5 @@
 ﻿import { Request, Response, NextFunction } from "express";
-import { checkPasswordService, cleanupEphemeralDemoUser, confirmAccount, createAccount, demoLogin, forgotPassword, getUser, googleAuth, login, refreshAccessToken, requestConfirmationCode, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
+import { checkPasswordService, cleanupEphemeralDemoUser, confirmAccount, createAccount, demoLogin, forgotPassword, getUser, googleAuth, login, refreshAccessToken, requestConfirmationCode, updateAvatar, updateCurrentUserPassword, updatePasswordWithToken, updateProfile, validateToken } from "../services/authService";
 
 export class AuthController {
   static createAccount = async (
@@ -249,4 +249,17 @@ export class AuthController {
       next(error);
     }
   };
+
+  static updateAvatar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const result = await updateAvatar(req.file!, req.user!._id);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
 }

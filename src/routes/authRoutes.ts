@@ -7,6 +7,9 @@ import { authLimiter, demoLoginLimiter, registerLimiter } from "../middleware/li
 import { validate } from "../middleware/validate";
 import { loginSchema } from "../schemas/authSchema";
 import { idempotencyMiddleware } from "../middleware/itemPotency";
+import multer from "multer";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = Router();
 
@@ -513,5 +516,7 @@ router.post('/google',
 );
 
 router.post("/demo-login", demoLoginLimiter, AuthController.demoLogin);
+
+router.post("/profile/avatar", authenticate, upload.single("avatar"), AuthController.updateAvatar);
 
 export default router;

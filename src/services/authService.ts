@@ -24,6 +24,9 @@ import Project from "../models/ProjectModel";
 import Task from "../models/TaskModel";
 import bcrypt from "bcrypt";
 import { getDemoSeedData } from "./demoSeedData";
+import cloudinary from "../config/cloudinary";
+import { getCloudinaryUrl } from "../utils/cloudinaryUrl";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary";
 
 const googleUserInfoSchema = z.object({
   email: z.string(),
@@ -321,6 +324,8 @@ export const demoLogin = async (): Promise<{
     name: "Visitante Demo",
     email: `demo-${Date.now()}-${crypto.randomUUID().slice(0, 8)}@treework.demo`,
     password: await bcrypt.hash(crypto.randomUUID(), 10),
+    avatarUrl: "https://res.cloudinary.com/duye6vbq5/image/upload/v1786752393/uptask/attachments/bss8mybrli2f5rjhwoq2.jpg",
+    avatarPublicId: "uptask/attachments/bss8mybrli2f5rjhwoq2",
     confirmed: true,
     isEphemeralDemo: true,
   });
@@ -333,6 +338,7 @@ export const demoLogin = async (): Promise<{
       clientName: projectSeed.clientName,
       description: projectSeed.description,
       manager: ephemeralUser._id,
+      team: [...projectSeed.team]
     });
 
     for (const taskSeed of projectSeed.tasks) {
@@ -343,6 +349,7 @@ export const demoLogin = async (): Promise<{
         labels: taskSeed.labels ?? [],
         deadline: taskSeed.deadline ?? null,
         project: project._id,
+        assignedTo: taskSeed.assignedTo
       });
 
       project.tasks.push(task._id);
@@ -365,4 +372,28 @@ export const cleanupEphemeralDemoUser = async (userId: Types.ObjectId) => {
   await Task.deleteMany({ project: { $in: projectIds } });
   await Project.deleteMany({ manager: userId });
   await User.deleteOne({ _id: userId, isEphemeralDemo: true });
+};
+
+export const updateAvatar = async (
+  file: Express.Multer.File,
+  userId: Types.ObjectId,
+) => {
+  if (!file) throw new ValidationError("No se envió ningún archivo");
+
+  const user = await User.findById(userId);
+  if (!user) throw new NotFoundError("Usuario", userId.toString());
+
+  if (user.avatarPublicId) {
+    await cloudinary.uploader.destroy(user.avatarPublicId);
+  }
+
+  const { url, public_id } = await uploadToCloudinary(file.buffer);
+
+  user.avatarUrl = url;
+  user.avatarPublicId = public_id;
+  await user.save();
+
+  return {
+    avatarUrl: getCloudinaryUrl(public_id, 200, 200),
+  };
 };

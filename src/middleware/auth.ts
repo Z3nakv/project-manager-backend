@@ -40,7 +40,7 @@ export const authenticate = async (
       throw new AuthenticationError("Token no válido");
     }
 
-    const user = await User.findById(decoded.id).select("_id name email isEphemeralDemo");
+    const user = await User.findById(decoded.id).select("_id name email avatarUrl isEphemeralDemo");
     if (!user) {
       throw new AuthenticationError("Token no válido");
     }

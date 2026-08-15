@@ -16,8 +16,8 @@ export const getProjects = async (user: IUser) : Promise<IProject[]> => {
   return Project.find({
     $or: [{ manager: user._id }, { team: { $in: [user._id] } }],
   })
-    .populate({path:"manager", select:"_id name avatar"})
-    .populate({path:"team", select:"_id name avatar"})
+    .populate({path:"manager", select:"_id name avatarUrl"})
+    .populate({path:"team", select:"_id name avatarUrl"})
     .populate({
       path: "tasks",
       select: "_id status deadline",
@@ -38,12 +38,12 @@ export const getProjectById = async (projectId: string) : Promise<IProject> => {
         },
         {
           path: "assignedTo",
-          select: "_id name avatar",
+          select: "_id name avatarUrl",
         },
       ],
     })
-    .populate({path: "manager", select: "_id name avatar"})
-    .populate({path: "team", select: "_id name avatar"})
+    .populate({path: "manager", select: "_id name avatarUrl"})
+    .populate({path: "team", select: "_id name avatarUrl"})
     .lean();
     
   if (!project) throw new NotFoundError("Project", projectId);
