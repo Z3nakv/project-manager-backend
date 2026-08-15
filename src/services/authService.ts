@@ -332,34 +332,39 @@ export const demoLogin = async (): Promise<{
 
   const seedData = getDemoSeedData();
 
-  for (const projectSeed of seedData) {
-    const project = new Project({
-      projectName: projectSeed.projectName,
-      clientName: projectSeed.clientName,
-      description: projectSeed.description,
-      manager: ephemeralUser._id,
-      team: [...projectSeed.team],
-      isEphemeralDemo: true
-    });
-
-    for (const taskSeed of projectSeed.tasks) {
-      const task = new Task({
-        name: taskSeed.name,
-        description: taskSeed.description,
-        status: taskSeed.status,
-        labels: taskSeed.labels ?? [],
-        deadline: taskSeed.deadline ?? null,
-        project: project._id,
-        assignedTo: taskSeed.assignedTo,
-        isEphemeralDemo: true
+  await Promise.all(
+    seedData.map(async (projectSeed) => {
+      const project = new Project({
+        projectName: projectSeed.projectName,
+        clientName: projectSeed.clientName,
+        description: projectSeed.description,
+        manager: ephemeralUser._id,
+        team: [...projectSeed.team],
+        isEphemeralDemo: true,
       });
 
-      project.tasks.push(task._id);
-      await task.save();
-    }
+      const tasks = projectSeed.tasks.map(
+        (taskSeed) =>
+          new Task({
+            name: taskSeed.name,
+            description: taskSeed.description,
+            status: taskSeed.status,
+            labels: taskSeed.labels ?? [],
+            deadline: taskSeed.deadline ?? null,
+            project: project._id,
+            assignedTo: taskSeed.assignedTo,
+            isEphemeralDemo: true,
+          })
+      );
 
-    await project.save();
-  }
+      project.tasks = tasks.map((t) => t._id);
+
+      await Promise.all([
+        Task.insertMany(tasks),
+        project.save(),
+      ]);
+    })
+  );
 
   const accessToken = generateAccessToken({ id: ephemeralUser._id });
   const refreshToken = generateRefreshToken({ id: ephemeralUser._id });
