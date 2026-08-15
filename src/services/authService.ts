@@ -338,7 +338,8 @@ export const demoLogin = async (): Promise<{
       clientName: projectSeed.clientName,
       description: projectSeed.description,
       manager: ephemeralUser._id,
-      team: [...projectSeed.team]
+      team: [...projectSeed.team],
+      isEphemeralDemo: true
     });
 
     for (const taskSeed of projectSeed.tasks) {
@@ -349,7 +350,8 @@ export const demoLogin = async (): Promise<{
         labels: taskSeed.labels ?? [],
         deadline: taskSeed.deadline ?? null,
         project: project._id,
-        assignedTo: taskSeed.assignedTo
+        assignedTo: taskSeed.assignedTo,
+        isEphemeralDemo: true
       });
 
       project.tasks.push(task._id);
