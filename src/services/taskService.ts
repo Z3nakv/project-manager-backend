@@ -13,9 +13,11 @@ export const createTask = async (
   data: CreateTaskInput,
   triggeredBy: Types.ObjectId,
   triggeredByName: string,
+  isEphemeralDemo:boolean
 ) : Promise<ITask> => {
   const task = new Task(data);
   task.project = project._id;
+  task.isEphemeralDemo = isEphemeralDemo;
   project.tasks.push(task._id);
   await Promise.all([task.save(), project.save()]);
   const members = getProjectMembers(project);

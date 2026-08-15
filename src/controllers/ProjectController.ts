@@ -4,7 +4,7 @@ import { createProject, deleteProject, getEditProjectById, getProjectById, getPr
 export class ProjectController {
   static createProject = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await createProject(req.body, req.user!._id);
+      await createProject(req.body, req.user!._id, req.user!.isEphemeralDemo);
       res.status(201).json({message: "Proyecto creado correctamente"});
     } catch (error) {
       next(error);

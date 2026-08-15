@@ -7,8 +7,8 @@ import { CreateProject } from "../schemas/projectSchema";
 import { getProjectMembers } from "../utils/projectHelpers";
 import { emitProjectDeleted, emitProjectUpdated } from "../socket/projectEvents";
 
-export const createProject = async (body: CreateProject,userId: Types.ObjectId) : Promise<IProject> => {
-  const project = await Project.create({ ...body, manager: userId });
+export const createProject = async (body: CreateProject,userId: Types.ObjectId, isEphemeralDemo:boolean) : Promise<IProject> => {
+  const project = await Project.create({ ...body, manager: userId, isEphemeralDemo: isEphemeralDemo });
   return project;
 };
 

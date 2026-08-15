@@ -64,8 +64,17 @@ const NotificationSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    isEphemeralDemo: {
+        type: Boolean,
+        default: false
+    },
   },
   { timestamps: true },
+);
+
+NotificationSchema.index(
+    { createdAt: 1 },
+    { expireAfterSeconds: 2 * 60 * 60, partialFilterExpression: { isEphemeralDemo: true } }
 );
 
 const Notification = model<INotification>("Notification", NotificationSchema);

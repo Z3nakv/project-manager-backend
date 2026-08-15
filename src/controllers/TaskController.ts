@@ -12,7 +12,7 @@ import {
 export class TaskController {
   static createTask = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await createTask(req.project, req.body, req.user!._id, req.user!.name);
+      await createTask(req.project, req.body, req.user!._id, req.user!.name, req.user!.isEphemeralDemo);
       res.json({message: "Tarea creada correctamente"});
     } catch (error) {
       next(error);

@@ -12,6 +12,7 @@ export class AttachmentController {
         req.file!,
         req.task._id,
         req.user!._id,
+        req.user!.isEphemeralDemo
       );
       res.status(200).json(attachment);
     } catch (error) {

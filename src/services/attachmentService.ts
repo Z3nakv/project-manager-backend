@@ -13,6 +13,7 @@ export const createAttachment = async (
   file: Express.Multer.File,
   taskId: Types.ObjectId,
   userId: Types.ObjectId,
+  isEphemeralDemo: boolean
 ) : Promise<IAttachment> => {
   if (!file) throw new ValidationError("No se envió ningún archivo");
   const { url, public_id } = await uploadToCloudinary(file.buffer);
@@ -24,6 +25,7 @@ export const createAttachment = async (
     publicId: public_id,
     mimeType: file.mimetype,
     size: file.size,
+    isEphemeralDemo: isEphemeralDemo
   });
   return attachment;
 };

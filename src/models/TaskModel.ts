@@ -42,6 +42,7 @@ export interface ITask extends Document {
     deadline: Date | null
     labels: ILabel[] 
     assignedTo: Types.ObjectId[]
+    isEphemeralDemo: boolean
 }
 
 export const TaskSchema : Schema = new Schema({
@@ -107,8 +108,17 @@ export const TaskSchema : Schema = new Schema({
             type: Types.ObjectId,
             ref: "User"
         }
-    ]
-}, {timestamps: true})
+    ],
+    isEphemeralDemo: {
+        type: Boolean,
+        default: false
+    },
+}, {timestamps: true});
+
+TaskSchema.index(
+    { createdAt: 1 },
+    { expireAfterSeconds: 2 * 60 * 60, partialFilterExpression: { isEphemeralDemo: true } }
+);
 
 TaskSchema.pre('deleteOne', {document: true}, async function () {
 

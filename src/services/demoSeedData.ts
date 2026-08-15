@@ -5,12 +5,14 @@ type DemoTaskSeed = {
   status: "pending" | "onHold" | "inProgress" | "underReview" | "completed";
   labels?: { text: string; color: string }[];
   deadline?: Date;
+  assignedTo?: string[];
 };
 
 type DemoProjectSeed = {
   projectName: string;
   clientName: string;
   description: string;
+  team: string[];
   tasks: DemoTaskSeed[];
 };
 
@@ -25,12 +27,14 @@ export const getDemoSeedData = (): DemoProjectSeed[] => [
     projectName: "Ecommerce NIKE - Update",
     clientName: "Nike Inc.",
     description: "Rediseño completo de la plataforma de e-commerce, enfocado en checkout más rápido y personalización con IA.",
+    team: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
     tasks: [
       {
         name: "Implementar pasarela de pagos internacionales",
         description: "Integrar y configurar la pasarela de pagos (Stripe o PayPal) para permitir transacciones seguras con tarjetas de crédito y débito, incluyendo la gestión de divisas y conversión automática.",
         status: "pending",
         deadline: daysFromNow(10),
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
       {
         name: "Optimización del flujo de selección de tallas",
@@ -41,6 +45,7 @@ export const getDemoSeedData = (): DemoProjectSeed[] => [
           { text: "UI", color: "emerald" },
         ],
         deadline: daysFromNow(-3),
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
       {
         name: "Implementar buscador predictivo con filtros avanzados",
@@ -51,12 +56,14 @@ export const getDemoSeedData = (): DemoProjectSeed[] => [
           { text: "UX", color: "purple" },
         ],
         deadline: daysFromNow(6),
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
       {
         name: "Rediseño del carrito de compras",
         description: "Actualizar el diseño del carrito para mostrar recomendaciones de productos relacionados y un resumen claro de descuentos aplicados.",
         status: "onHold",
         labels: [{ text: "UI", color: "emerald" }],
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
       {
         name: "Pruebas de carga en checkout",
@@ -64,11 +71,13 @@ export const getDemoSeedData = (): DemoProjectSeed[] => [
         status: "underReview",
         labels: [{ text: "QA", color: "amber" }],
         deadline: daysFromNow(2),
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
       {
         name: "Migración del catálogo a nuevo CMS",
         description: "Migrar todos los productos y categorías al nuevo sistema de gestión de contenido headless, validando integridad de datos.",
         status: "completed",
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
     ],
   },
@@ -76,6 +85,7 @@ export const getDemoSeedData = (): DemoProjectSeed[] => [
     projectName: "App Móvil de Fidelización",
     clientName: "Starbucks Perú",
     description: "Aplicación móvil de puntos y recompensas para clientes frecuentes, con notificaciones push personalizadas.",
+    team: ["6a7fad1ba17eb7b67620705a", "6a1e19e492db0bc26882e881"],
     tasks: [
       {
         name: "Diseñar sistema de niveles de fidelización",
@@ -83,6 +93,7 @@ export const getDemoSeedData = (): DemoProjectSeed[] => [
         status: "pending",
         labels: [{ text: "UX", color: "purple" }],
         deadline: daysFromNow(14),
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
       {
         name: "Integrar notificaciones push",
@@ -90,11 +101,13 @@ export const getDemoSeedData = (): DemoProjectSeed[] => [
         status: "inProgress",
         labels: [{ text: "Backend", color: "sky" }],
         deadline: daysFromNow(5),
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
       {
         name: "Diseñar pantalla de canje de puntos",
         description: "Crear la interfaz donde los usuarios pueden ver y canjear sus puntos acumulados por productos o descuentos.",
         status: "completed",
+        assignedTo: ["6a1db66e251e9581aa79a24d", "6a1e19e492db0bc26882e881"],
       },
     ],
   },

@@ -11,6 +11,7 @@ export interface IProject extends Document {
   tasks: PopulatedDoc<ITask & Document>[];
   manager: PopulatedDoc<IUser & Document>;
   team: PopulatedDoc<IUser & Document>[];
+  isEphemeralDemo: boolean;
 }
 
 const ProjectSchema: Schema = new Schema({
@@ -44,8 +45,17 @@ const ProjectSchema: Schema = new Schema({
             type: Types.ObjectId,
             ref: 'User',
         }
-    ]
-}, {timestamps: true})
+    ],
+    isEphemeralDemo: {
+        type: Boolean,
+        default: false
+    },
+}, {timestamps: true});
+
+ProjectSchema.index(
+    { createdAt: 1 },
+    { expireAfterSeconds: 2 * 60 * 60, partialFilterExpression: { isEphemeralDemo: true } }
+);
 
 ProjectSchema.pre('deleteOne', {document: true}, async function () {
 

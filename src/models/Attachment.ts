@@ -10,6 +10,7 @@ export interface IAttachment extends Document {
     publicId: string;
     mimeType: string;
     size: number;
+    isEphemeralDemo: boolean;
 }
 
 const AttachmentSchema: Schema = new Schema({
@@ -41,6 +42,15 @@ const AttachmentSchema: Schema = new Schema({
         type: String,
         trim: true
     },
+    isEphemeralDemo: {
+        type: Boolean,
+        default: false
+    },
 }, {timestamps: true});
+
+AttachmentSchema.index(
+    { createdAt: 1 },
+    { expireAfterSeconds: 2 * 60 * 60, partialFilterExpression: { isEphemeralDemo: true } }
+);
 
 export const Attachment = mongoose.model<IAttachment>("Attachment", AttachmentSchema);
