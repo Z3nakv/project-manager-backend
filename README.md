@@ -299,7 +299,7 @@ La app usa `trust proxy` para manejar requests proxied correctamente en entornos
 
 ## Contacto / autor
 
-Desarrollado por Adrián Rivera.
+Desarrollado por Adrián Rivarola.
 
 Para revisión técnica, integración o colaboración, contactar desde el repositorio principal del proyecto o el perfil profesional asociado.
 
