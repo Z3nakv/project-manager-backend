@@ -24,8 +24,8 @@ configDotenv();
 const server = express();
 
 const allowedOrigins : string[] = [
-  process.env.FRONTEND_URL, // producción
-  "http://localhost:5173", // desarrollo local
+  process.env.FRONTEND_URL, 
+  "http://localhost:5173", 
 ].filter((origin): origin is string => Boolean(origin));
 
 const httpServer  = createServer(server);
@@ -78,7 +78,7 @@ if (process.env.NODE_ENV === "production") {
 server.use("/health", healthRoutes);
 
 server.use("/api", apiLimiter);
-server.use("/api/projects/:projectId/ai", aiLimiter, aiRoutes);
+server.use("/api/projects/:projectId", aiLimiter, aiRoutes);
 
 server.use('/api/notifications', notificationsRoute);
 server.use('/api/auth', authRouter);
