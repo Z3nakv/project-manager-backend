@@ -19,6 +19,7 @@ import morgan from 'morgan'
 import { setIO } from './socket/socketInstance';
 import healthRoutes from './routes/healthRoutes';
 import { cleanupStaleDemoSessions } from './scripts/cleanupStaleDemoSessions';
+
 configDotenv();
 
 const server = express();
@@ -78,12 +79,14 @@ if (process.env.NODE_ENV === "production") {
 server.use("/health", healthRoutes);
 
 server.use("/api", apiLimiter);
-server.use("/api/projects/:projectId", aiLimiter, aiRoutes);
+server.use('/api/projects', projectRouter);
+server.use('/api/projects', attachmentRouter);
+
+server.use("/api/projects", aiLimiter, aiRoutes);
 
 server.use('/api/notifications', notificationsRoute);
 server.use('/api/auth', authRouter);
-server.use('/api/projects', projectRouter);
-server.use('/api/projects', attachmentRouter);
+
 
 server.use(errorHandler);
 

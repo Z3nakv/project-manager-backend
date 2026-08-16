@@ -56,7 +56,7 @@ router.param('projectId', projectExists);
  *       500:
  *         $ref: "#/components/responses/InternalError"
  */
-router.post('/suggest-tasks',
+router.post('/:projectId/suggest-tasks',
     param('projectId').isMongoId().withMessage('Id de proyecto no válido'),
     body('selectedFields').notEmpty().withMessage('Task props not valid'),
     handleInputErrors,
