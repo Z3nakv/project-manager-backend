@@ -19,7 +19,7 @@ export const createNote = async (
   const { _id } = user;
   note.createdBy = _id;
   note.task = task._id;
-
+  note.isEphemeralDemo = user.isEphemeralDemo
   task.notes.push(note._id);
 
   await Promise.all([task.save(), note.save()]);

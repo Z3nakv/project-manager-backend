@@ -5,6 +5,7 @@ export interface INote extends Document {
     createdBy: Types.ObjectId
     task: Types.ObjectId
     completed: boolean
+    isEphemeralDemo: boolean
 }
 
 const NoteSchema : Schema = new Schema({
