@@ -316,10 +316,7 @@ export const googleAuth = async (
   return { user, accessToken, refreshToken };
 };
 
-export const demoLogin = async (): Promise<{
-  accessToken: string;
-  refreshToken: string;
-}> => {
+export const demoLogin = async (): Promise<{accessToken: string, refreshToken: string;}> => {
   const ephemeralUser = await User.create({
     name: "Visitante Demo",
     email: `demo-${Date.now()}-${crypto.randomUUID().slice(0, 8)}@treework.demo`,
