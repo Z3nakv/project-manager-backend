@@ -151,7 +151,7 @@ router.post('/login',
 
 router.post("/refresh-token", AuthController.refreshToken);
 
-router.post("/logout", AuthController.logout);
+router.post("/logout", authenticate, AuthController.logout);
 
 /**
  * @openapi
