@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { IProject } from "../models/ProjectModel";
+import Project, { IProject } from "../models/ProjectModel";
 import Task, { ITask, TaskStatus } from "../models/TaskModel";
 import { notifyChangesToTeamSafely } from "./notificationService";
 import { ConflictError, NotFoundError, ValidationError } from "../utils/errors";
@@ -33,8 +33,21 @@ export const createTask = async (
   return task;
 };
 
-export const getTasksByProject = async (projectId: Types.ObjectId) : Promise<ITask[]> => {
-  return Task.find({ project: projectId }).lean();
+type TasksByProjectResult = {
+  tasks: ITask[];
+  manager: IProject['manager'];
+};
+
+export const getTasksByProject = async (projectId: Types.ObjectId) : Promise<TasksByProjectResult> => {
+
+  const [project, tasks] = await Promise.all([
+    Project.findById(projectId).select('manager').populate('manager').lean(),
+    Task.find({ project: projectId }).populate('assignedTo').lean(),
+  ]);
+
+  if (!project) throw new NotFoundError('Proyecto no encontrado');
+  
+  return {tasks, manager: project.manager};
 };
 
 export const getTaskById = async (taskId: Types.ObjectId) : Promise<ITask> => {

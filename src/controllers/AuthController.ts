@@ -153,7 +153,6 @@ export class AuthController {
   ) => {
     try {
       const user = getUser(req.user!);
-      console.log(user);
       
       res.json(user);
     } catch (error) {

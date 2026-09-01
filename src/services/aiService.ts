@@ -17,8 +17,8 @@ export async function suggestTasksForProject({
   selectedFields,
   quantity,
 }: suggestTasksForProjectProps) : Promise<SuggestTasksResponse> {
-  const existingTasks = await getTasksByProject(new Types.ObjectId(projectId));
-  const existingNames = existingTasks.map((task) => task.name).join(", ");
+const { tasks: existingTasks } = await getTasksByProject(new Types.ObjectId(projectId));
+const existingNames = existingTasks.map((task) => task.name).join(", ");
 
   const fieldSpecs: Record<string, string> = {
     labels:
