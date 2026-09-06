@@ -41,8 +41,8 @@ type TasksByProjectResult = {
 export const getTasksByProject = async (projectId: Types.ObjectId) : Promise<TasksByProjectResult> => {
 
   const [project, tasks] = await Promise.all([
-    Project.findById(projectId).select('manager').populate('manager').lean(),
-    Task.find({ project: projectId }).populate('assignedTo').lean(),
+    Project.findById(projectId).select('manager').populate({path:'manager', select: '_id name avatarUrl'}).lean(),
+    Task.find({ project: projectId }).populate({path:'assignedTo', select:'_id name avatarUrl'}).select('-project -completedBy -updatedAt').lean(),
   ]);
 
   if (!project) throw new NotFoundError('Proyecto no encontrado');
