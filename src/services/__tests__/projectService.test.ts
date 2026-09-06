@@ -30,7 +30,8 @@ describe('projectService', () => {
           clientName: 'Cliente X',
           description: 'Descripción',
         } as any,
-        manager._id as Types.ObjectId
+        manager._id as Types.ObjectId,
+        false
       );
 
       expect(project.manager?.toString()).toBe(manager._id.toString());

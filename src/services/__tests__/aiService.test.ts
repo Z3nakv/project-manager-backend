@@ -16,6 +16,7 @@ vi.mock('../taskService', () => ({
 }));
 
 const MOCK_PROJECT_ID = '507f1f77bcf86cd799439011';
+const mockManager = { _id: 'user-1', name: 'Manager Uno' } as any;
 
 describe('suggestTasksForProject', () => {
   beforeEach(() => {
@@ -23,7 +24,7 @@ describe('suggestTasksForProject', () => {
   });
 
   it('debe parsear y devolver las sugerencias del modelo de IA', async () => {
-    vi.mocked(getTasksByProject).mockResolvedValue([]);
+    vi.mocked(getTasksByProject).mockResolvedValue({ manager: mockManager, tasks: [] });
     vi.mocked(ai.interactions.create).mockResolvedValue({
       output_text: JSON.stringify([
         { name: 'Tarea sugerida 1', description: 'Desc 1' },
@@ -44,7 +45,7 @@ describe('suggestTasksForProject', () => {
   });
 
   it('debe lanzar un error si la IA no devuelve output_text', async () => {
-    vi.mocked(getTasksByProject).mockResolvedValue([]);
+    vi.mocked(getTasksByProject).mockResolvedValue({ manager: mockManager, tasks: [] });
     vi.mocked(ai.interactions.create).mockResolvedValue({
       output_text: null,
     } as any);
@@ -61,7 +62,7 @@ describe('suggestTasksForProject', () => {
   });
 
   it('debe incluir estimatedDays en el schema solo si fue seleccionado', async () => {
-    vi.mocked(getTasksByProject).mockResolvedValue([]);
+    vi.mocked(getTasksByProject).mockResolvedValue({ manager: mockManager, tasks: [] });
     vi.mocked(ai.interactions.create).mockResolvedValue({
       output_text: JSON.stringify([{ name: 'T', description: 'D', estimatedDays: 3 }]),
     } as any);
@@ -80,7 +81,7 @@ describe('suggestTasksForProject', () => {
   });
 
   it('debe incluir labels en el schema solo si fue seleccionado', async () => {
-    vi.mocked(getTasksByProject).mockResolvedValue([]);
+    vi.mocked(getTasksByProject).mockResolvedValue({ manager: mockManager, tasks: [] });
     vi.mocked(ai.interactions.create).mockResolvedValue({
       output_text: JSON.stringify([{ name: 'T', description: 'D' }]),
     } as any);
@@ -99,10 +100,13 @@ describe('suggestTasksForProject', () => {
   });
 
   it('debe incluir las tareas existentes del proyecto en el prompt para evitar duplicados', async () => {
-    vi.mocked(getTasksByProject).mockResolvedValue([
-      { name: 'Tarea Existente A' } as any,
-      { name: 'Tarea Existente B' } as any,
-    ]);
+    vi.mocked(getTasksByProject).mockResolvedValue({
+      manager: mockManager,
+      tasks: [
+        { name: 'Tarea Existente A' } as any,
+        { name: 'Tarea Existente B' } as any,
+      ],
+    });
     vi.mocked(ai.interactions.create).mockResolvedValue({
       output_text: JSON.stringify([{ name: 'Nueva', description: 'Desc' }]),
     } as any);
